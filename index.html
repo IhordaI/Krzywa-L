@@ -5,58 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lissajous 3D Explorer PRO</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #1a1a1a;
-            color: #ffffff;
-            overflow: hidden;
-        }
-
-        #container {
-            display: flex;
-            height: 100vh;
-        }
-
-        #panel-sterowania {
-            width: 320px;
-            padding: 20px;
-            background: #2d2d2d;
-            overflow-y: auto;
-            border-right: 2px solid #3a3a3a;
-        }
-
-        #wizualizacja-3d {
-            flex: 1;
-            position: relative;
-        }
-
-        .tytul-panelu {
-            font-size: 1.4em;
-            color: #00b4d8;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #404040;
-        }
-
-        #wykres-energii {
-            height: 250px;
-            margin-top: 25px;
-            background: #252525;
-            border-radius: 8px;
-            padding: 15px;
-        }
-
-        .webgl-error {
-            color: red;
-            padding: 20px;
-            font-size: 1.2em;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; background: #1a1a1a; color: #fff; overflow: hidden; }
+        #container { display: flex; height: 100vh; }
+        #panel-sterowania { width: 320px; padding: 20px; background: #2d2d2d; border-right: 2px solid #3a3a3a; overflow-y: auto; }
+        #wizualizacja-3d { flex: 1; position: relative; }
+        .tytul-panelu { font-size: 1.4em; color: #00b4d8; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #404040; }
+        #wykres-energii { height: 250px; margin-top: 25px; background: #252525; border-radius: 8px; padding: 15px; }
+        .webgl-error { color: red; padding: 20px; font-size: 1.2em; }
     </style>
 </head>
 <body>
@@ -69,24 +25,24 @@
         <div id="wizualizacja-3d"></div>
     </div>
 
-    <!-- Biblioteki zewnętrzne -->
+    <!-- Biblioteki -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.18.2.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat.gui/0.7.7/dat.gui.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // Sprawdzenie wsparcia WebGL
-        if (!Detector.webgl) {
-            const errorMsg = document.createElement('div');
-            errorMsg.className = 'webgl-error';
-            errorMsg.innerHTML = 'Twoja przeglądarka nie obsługuje WebGL!<br>Użyj najnowszej wersji Chrome/Firefox/Edge';
-            document.getElementById('wizualizacja-3d').appendChild(errorMsg);
-            throw new Error("WebGL not supported");
+        // Sprawdzenie WebGL
+        if (!WEBGL.isWebGLAvailable()) {
+            const error = document.createElement('div');
+            error.className = 'webgl-error';
+            error.innerHTML = 'Wymagana obsługa WebGL!<br>Użyj Chrome/Firefox/Edge';
+            document.getElementById('wizualizacja-3d').appendChild(error);
+            throw new Error('WebGL nie jest dostępny');
         }
 
-        // Inicjalizacja środowiska 3D
-        let scene, camera, renderer, controls;
+        // Inicjalizacja
+        let scene, camera, renderer, controls, grid;
         let krzywa = null;
         let t = 0;
         
@@ -103,7 +59,6 @@
         };
 
         function inicjalizujScene() {
-            // Scena 3D
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x1a1a1a);
 
@@ -131,27 +86,22 @@
             controls.dampingFactor = 0.05;
 
             // Oświetlenie
-            const swiatloOtoczenia = new THREE.AmbientLight(0x404040);
-            scene.add(swiatloOtoczenia);
+            scene.add(new THREE.AmbientLight(0x404040));
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+            directionalLight.position.set(10, 15, 10);
+            scene.add(directionalLight);
 
-            const swiatloKierunkowe = new THREE.DirectionalLight(0xffffff, 0.7);
-            swiatloKierunkowe.position.set(10, 15, 10);
-            scene.add(swiatloKierunkowe);
-
-            // Elementy pomocnicze
-            const siatka = new THREE.GridHelper(20, 20, 0x444444, 0x444444);
-            scene.add(siatka);
-            siatka.visible = parametry.pokazSiatke;
-
-            const osie = new THREE.AxesHelper(5);
-            scene.add(osie);
+            // Siatka i osie
+            grid = new THREE.GridHelper(20, 20, 0x444444, 0x444444);
+            scene.add(grid);
+            scene.add(new THREE.AxesHelper(5));
         }
 
         function inicjalizujGUI() {
             const gui = new dat.GUI({ 
                 autoPlace: false,
                 width: 280,
-                hideable: false
+                closed: false
             });
             
             document.getElementById('gui').appendChild(gui.domElement);
@@ -163,23 +113,11 @@
             folderCzestotliwosci.add(parametry.czestotliwosci, 'z', 0.1, 5, 0.1).name('Oś Z');
             folderCzestotliwosci.open();
 
-            const folderFazy = gui.addFolder('Przesunięcia Fazowe');
-            folderFazy.add(parametry.fazy, 'x', 0, 2*Math.PI, 0.01).name('Oś X');
-            folderFazy.add(parametry.fazy, 'y', 0, 2*Math.PI, 0.01).name('Oś Y');
-            folderFazy.add(parametry.fazy, 'z', 0, 2*Math.PI, 0.01).name('Oś Z');
-
-            const folderAmplitudy = gui.addFolder('Amplitudy');
-            folderAmplitudy.add(parametry.amplitudy, 'x', 0, 2, 0.1).name('Oś X');
-            folderAmplitudy.add(parametry.amplitudy, 'y', 0, 2, 0.1).name('Oś Y');
-            folderAmplitudy.add(parametry.amplitudy, 'z', 0, 2, 0.1).name('Oś Z');
-
             gui.add(parametry, 'tlumienie', 0, 0.2, 0.001).name('Tłumienie');
             gui.add(parametry, 'predkoscAnimacji', 0, 5, 0.1).name('Prędkość');
-            gui.addColor(parametry, 'kolor').name('Kolor krzywej');
+            gui.addColor(parametry, 'kolor').name('Kolor');
             gui.add(parametry, 'autoRotacja').name('Auto-rotacja');
-            gui.add(parametry, 'pokazSiatke').name('Pokaż siatkę').onChange(v => {
-                scene.children[3].visible = v;
-            });
+            gui.add(parametry, 'pokazSiatke').name('Siatka').onChange(v => grid.visible = v);
         }
 
         function aktualizujKrzywa() {
@@ -208,57 +146,33 @@
             }
 
             const geometria = new THREE.BufferGeometry().setFromPoints(punkty);
-            const material = new THREE.LineBasicMaterial({ 
-                color: kolor,
-                linewidth: 2
-            });
-            
-            krzywa = new THREE.Line(geometria, material);
+            krzywa = new THREE.Line(
+                geometria,
+                new THREE.LineBasicMaterial({ color: kolor, linewidth: 2 })
+            );
             scene.add(krzywa);
         }
 
-        function inicjalizujWykresEnergii() {
-            const dane = [{
-                x: [],
-                y: [],
+        function inicjalizujWykres() {
+            Plotly.newPlot('wykres-energii', [{
+                x: [], y: [],
                 mode: 'lines',
-                line: { color: '#2ed573', width: 2 },
-                name: 'Energia całkowita'
-            }];
-
-            const layout = {
+                line: { color: '#2ed573', width: 2 }
+            }], {
                 plot_bgcolor: "#252525",
                 paper_bgcolor: "#252525",
                 font: { color: "#fff" },
                 margin: { t: 30, l: 40, r: 20, b: 40 },
-                xaxis: { 
-                    title: 'Czas [s]', 
-                    gridcolor: '#404040',
-                    range: [0, 50]
-                },
-                yaxis: { 
-                    title: 'Energia [J]', 
-                    gridcolor: '#404040',
-                    range: [0, 1]
-                }
-            };
-
-            Plotly.newPlot('wykres-energii', dane, layout);
+                xaxis: { title: 'Czas [s]', gridcolor: '#404040', range: [0, 50] },
+                yaxis: { title: 'Energia [J]', gridcolor: '#404040', range: [0, 1] }
+            });
         }
 
-        function aktualizujWykresEnergii() {
+        function aktualizujWykres() {
             const energia = Math.exp(-2 * parametry.tlumienie * t);
+            Plotly.extendTraces('wykres-energii', {x: [[t]], y: [[energia]]}, [0]);
             
-            Plotly.extendTraces('wykres-energii', {
-                x: [[t]],
-                y: [[energia]]
-            }, [0]);
-
-            if(t > 50) {
-                Plotly.relayout('wykres-energii', {
-                    'xaxis.range': [t-50, t]
-                });
-            }
+            if(t > 50) Plotly.relayout('wykres-energii', {'xaxis.range': [t-50, t]});
         }
 
         function animacja() {
@@ -266,8 +180,8 @@
             
             try {
                 controls.update();
-                aktualizujKrzyva();
-                aktualizujWykresEnergii();
+                aktualizujKrzywa();
+                aktualizujWykres();
 
                 if(parametry.autoRotacja) {
                     camera.position.x = 15 * Math.sin(t/100);
@@ -281,24 +195,18 @@
             }
         }
 
-        // Obsługa zmiany rozmiaru okna
+        // Event listeners
         window.addEventListener('resize', () => {
             camera.aspect = (window.innerWidth - 320) / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth - 320, window.innerHeight);
         });
 
-        // Start aplikacji po załadowaniu strony
-        window.addEventListener('load', () => {
-            try {
-                inicjalizujScene();
-                inicjalizujGUI();
-                inicjalizujWykresEnergii();
-                animacja();
-            } catch (error) {
-                console.error('Błąd inicjalizacji:', error);
-            }
-        });
+        // Start
+        inicjalizujScene();
+        inicjalizujGUI();
+        inicjalizujWykres();
+        animacja();
     </script>
 </body>
 </html>
