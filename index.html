@@ -1,0 +1,256 @@
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaawansowany Eksplorator Krzywych Lissajous 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #panel-sterowania {
+            width: 320px;
+            padding: 20px;
+            background: #2d2d2d;
+            overflow-y: auto;
+            border-right: 2px solid #3a3a3a;
+        }
+
+        #wizualizacja-3d {
+            flex: 1;
+            position: relative;
+        }
+
+        .tytul-panelu {
+            font-size: 1.4em;
+            color: #00b4d8;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #404040;
+        }
+
+        #wykres-energii {
+            height: 250px;
+            margin-top: 25px;
+            background: #252525;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .statystyki {
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="panel-sterowania">
+            <h2 class="tytul-panelu">Sterowanie Parametrami</h2>
+            <div id="gui"></div>
+            <div id="wykres-energii"></div>
+        </div>
+        <div id="wizualizacja-3d"></div>
+    </div>
+
+    <!-- Biblioteki zewnętrzne -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.16.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat.gui/0.7.7/dat.gui.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // Inicjalizacja środowiska 3D
+        let scene, camera, renderer, controls;
+        let krzywa, material, geometria;
+        let t = 0;
+        
+        const parametry = {
+            czestotliwosci: { x: 1, y: 2, z: 3 },
+            fazy: { x: 0, y: 0, z: 0 },
+            amplitudy: { x: 1, y: 1, z: 1 },
+            tlumienie: 0.05,
+            dlugoscKrzywej: 1500,
+            predkoscAnimacji: 1.0,
+            kolor: "#ff6b6b",
+            autoRotacja: true,
+            pokazSiatke: true
+        };
+
+        function inicjalizujScene() {
+            // Scena 3D
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+
+            // Kamera
+            camera = new THREE.PerspectiveCamera(75, (window.innerWidth - 320) / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 10, 10);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+            document.getElementById('wizualizacja-3d').appendChild(renderer.domElement);
+
+            // Kontrola kamery
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Oświetlenie
+            const swiatloOtoczenia = new THREE.AmbientLight(0x404040);
+            scene.add(swiatloOtoczenia);
+
+            const swiatloKierunkowe = new THREE.DirectionalLight(0xffffff, 0.7);
+            swiatloKierunkowe.position.set(10, 15, 10);
+            scene.add(swiatloKierunkowe);
+
+            // Elementy pomocnicze
+            const siatka = new THREE.GridHelper(20, 20, 0x444444, 0x444444);
+            scene.add(siatka);
+
+            const osie = new THREE.AxesHelper(5);
+            scene.add(osie);
+        }
+
+        function inicjalizujGUI() {
+            const gui = new dat.GUI({ autoPlace: false, width: 280 });
+            document.getElementById('gui').appendChild(gui.domElement);
+
+            // Foldery parametrów
+            const folderCzestotliwosci = gui.addFolder('Częstotliwości');
+            folderCzestotliwosci.add(parametry.czestotliwosci, 'x', 0.1, 5).name('Oś X').step(0.1);
+            folderCzestotliwosci.add(parametry.czestotliwosci, 'y', 0.1, 5).name('Oś Y').step(0.1);
+            folderCzestotliwosci.add(parametry.czestotliwosci, 'z', 0.1, 5).name('Oś Z').step(0.1);
+
+            const folderFazy = gui.addFolder('Przesunięcia Fazowe');
+            folderFazy.add(parametry.fazy, 'x', 0, 2*Math.PI).name('Oś X').step(0.01);
+            folderFazy.add(parametry.fazy, 'y', 0, 2*Math.PI).name('Oś Y').step(0.01);
+            folderFazy.add(parametry.fazy, 'z', 0, 2*Math.PI).name('Oś Z').step(0.01);
+
+            const folderAmplitudy = gui.addFolder('Amplitudy');
+            folderAmplitudy.add(parametry.amplitudy, 'x', 0, 2).name('Oś X').step(0.1);
+            folderAmplitudy.add(parametry.amplitudy, 'y', 0, 2).name('Oś Y').step(0.1);
+            folderAmplitudy.add(parametry.amplitudy, 'z', 0, 2).name('Oś Z').step(0.1);
+
+            gui.add(parametry, 'tlumienie', 0, 0.2).name('Tłumienie').step(0.001);
+            gui.add(parametry, 'predkoscAnimacji', 0, 5).name('Prędkość Animacji');
+            gui.addColor(parametry, 'kolor').name('Kolor Krzywej');
+            gui.add(parametry, 'autoRotacja').name('Automatyczna Rotacja');
+            gui.add(parametry, 'pokazSiatke').name('Wyświetl Siatkę').onChange(v => {
+                scene.children[3].visible = v;
+            });
+        }
+
+        function aktualizujKrzywa() {
+            if(krzywa) scene.remove(krzywa);
+            
+            const punkty = [];
+            const kolor = new THREE.Color(parametry.kolor);
+
+            for(let i = 0; i < parametry.dlugoscKrzywej; i++) {
+                const tlumienie = Math.exp(-parametry.tlumienie * t);
+                
+                const x = parametry.amplitudy.x * tlumienie * Math.sin(
+                    parametry.czestotliwosci.x * t + parametry.fazy.x
+                );
+                
+                const y = parametry.amplitudy.y * tlumienie * Math.sin(
+                    parametry.czestotliwosci.y * t + parametry.fazy.y
+                );
+                
+                const z = parametry.amplitudy.z * tlumienie * Math.sin(
+                    parametry.czestotliwosci.z * t + parametry.fazy.z
+                );
+
+                punkty.push(new THREE.Vector3(x, y, z));
+                t += 0.01 * parametry.predkoscAnimacji;
+            }
+
+            geometria = new THREE.BufferGeometry().setFromPoints(punkty);
+            material = new THREE.LineBasicMaterial({ color: kolor });
+            krzywa = new THREE.Line(geometria, material);
+            scene.add(krzywa);
+        }
+
+        function inicjalizujWykresEnergii() {
+            const dane = [{
+                x: [],
+                y: [],
+                mode: 'lines',
+                line: { color: '#2ed573', width: 2 },
+                name: 'Energia Całkowita'
+            }];
+
+            const layout = {
+                plot_bgcolor: "#252525",
+                paper_bgcolor: "#252525",
+                font: { color: "#fff" },
+                margin: { t: 30, l: 40, r: 20, b: 40 },
+                xaxis: { title: 'Czas [s]', gridcolor: '#404040' },
+                yaxis: { title: 'Energia [J]', gridcolor: '#404040' }
+            };
+
+            Plotly.newPlot('wykres-energii', dane, layout);
+        }
+
+        function aktualizujWykresEnergii() {
+            const energia = Math.exp(-2 * parametry.tlumienie * t);
+            Plotly.extendTraces('wykres-energii', {
+                x: [[t]],
+                y: [[energia]]
+            }, [0]);
+
+            if(t > 50) {
+                Plotly.relayout('wykres-energii', {
+                    'xaxis.range': [t-50, t]
+                });
+            }
+        }
+
+        function animacja() {
+            requestAnimationFrame(animacja);
+            
+            controls.update();
+            aktualizujKrzywa();
+            aktualizujWykresEnergii();
+
+            if(parametry.autoRotacja) {
+                camera.position.x = 15 * Math.sin(t/100);
+                camera.position.z = 15 * Math.cos(t/100);
+                camera.lookAt(scene.position);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = (window.innerWidth - 320) / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+        });
+
+        // Inicjalizacja
+        inicjalizujScene();
+        inicjalizujGUI();
+        inicjalizujWykresEnergii();
+        animacja();
+    </script>
+</body>
+</html>
