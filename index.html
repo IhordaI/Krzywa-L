@@ -1,211 +1,87 @@
+<!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lissajous 3D Explorer PRO</title>
+    <title>3D Lissajous z osiami</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Arial', sans-serif; background: #1a1a1a; color: #fff; overflow: hidden; }
-        #container { display: flex; height: 100vh; }
-        #panel-sterowania { width: 320px; padding: 20px; background: #2d2d2d; border-right: 2px solid #3a3a3a; overflow-y: auto; }
-        #wizualizacja-3d { flex: 1; position: relative; }
-        .tytul-panelu { font-size: 1.4em; color: #00b4d8; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #404040; }
-        #wykres-energii { height: 250px; margin-top: 25px; background: #252525; border-radius: 8px; padding: 15px; }
-        .webgl-error { color: red; padding: 20px; font-size: 1.2em; }
+        body { margin: 0; overflow: hidden; background-color: #111; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="panel-sterowania">
-            <h2 class="tytul-panelu">Sterowanie Parametrami</h2>
-            <div id="gui"></div>
-            <div id="wykres-energii"></div>
-        </div>
-        <div id="wizualizacja-3d"></div>
-    </div>
-
-    <!-- Biblioteki -->
+    <!-- Three.js + OrbitControls -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.plot.ly/plotly-2.18.2.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat.gui/0.7.7/dat.gui.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // Sprawdzenie WebGL
-        if (!WEBGL.isWebGLAvailable()) {
-            const error = document.createElement('div');
-            error.className = 'webgl-error';
-            error.innerHTML = 'Wymagana obsługa WebGL!<br>Użyj Chrome/Firefox/Edge';
-            document.getElementById('wizualizacja-3d').appendChild(error);
-            throw new Error('WebGL nie jest dostępny');
-        }
+        // Scena i renderer
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111111);
 
-        // Inicjalizacja
-        let scene, camera, renderer, controls, grid;
-        let krzywa = null;
-        let t = 0;
-        
-        const parametry = {
-            czestotliwosci: { x: 1, y: 2, z: 3 },
-            fazy: { x: 0, y: 0, z: 0 },
-            amplitudy: { x: 1, y: 1, z: 1 },
-            tlumienie: 0.05,
-            dlugoscKrzywej: 1500,
-            predkoscAnimacji: 1.0,
-            kolor: "#ff6b6b",
-            autoRotacja: true,
-            pokazSiatke: true
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 5, 5);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Osi i siatka
+        const axesHelper = new THREE.AxesHelper(4);
+        scene.add(axesHelper);
+        const gridHelper = new THREE.GridHelper(10, 10);
+        scene.add(gridHelper);
+
+        // Parametry krzywej
+        const params = {
+            freqX: 3,
+            freqY: 2,
+            freqZ: 1,
+            amplitude: 2,
+            speed: 0.02,
+            points: 500
         };
 
-        function inicjalizujScene() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a1a);
+        // Geometry i materiał linii
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(params.points * 3);
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const material = new THREE.LineBasicMaterial({ color: 0x00ff88 });
+        const line = new THREE.Line(geometry, material);
+        scene.add(line);
 
-            // Kamera
-            camera = new THREE.PerspectiveCamera(
-                75,
-                (window.innerWidth - 320) / window.innerHeight,
-                0.1,
-                1000
-            );
-            camera.position.set(10, 10, 10);
+        // Kontrola kamery
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
 
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ 
-                antialias: true,
-                powerPreference: "high-performance"
-            });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth - 320, window.innerHeight);
-            document.getElementById('wizualizacja-3d').appendChild(renderer.domElement);
+        // Animacja
+        let t = 0;
+        function animate() {
+            requestAnimationFrame(animate);
 
-            // Kontrola kamery
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-
-            // Oświetlenie
-            scene.add(new THREE.AmbientLight(0x404040));
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-            directionalLight.position.set(10, 15, 10);
-            scene.add(directionalLight);
-
-            // Siatka i osie
-            grid = new THREE.GridHelper(20, 20, 0x444444, 0x444444);
-            scene.add(grid);
-            scene.add(new THREE.AxesHelper(5));
-        }
-
-        function inicjalizujGUI() {
-            const gui = new dat.GUI({ 
-                autoPlace: false,
-                width: 280,
-                closed: false
-            });
-            
-            document.getElementById('gui').appendChild(gui.domElement);
-
-            // Foldery parametrów
-            const folderCzestotliwosci = gui.addFolder('Częstotliwości');
-            folderCzestotliwosci.add(parametry.czestotliwosci, 'x', 0.1, 5, 0.1).name('Oś X');
-            folderCzestotliwosci.add(parametry.czestotliwosci, 'y', 0.1, 5, 0.1).name('Oś Y');
-            folderCzestotliwosci.add(parametry.czestotliwosci, 'z', 0.1, 5, 0.1).name('Oś Z');
-            folderCzestotliwosci.open();
-
-            gui.add(parametry, 'tlumienie', 0, 0.2, 0.001).name('Tłumienie');
-            gui.add(parametry, 'predkoscAnimacji', 0, 5, 0.1).name('Prędkość');
-            gui.addColor(parametry, 'kolor').name('Kolor');
-            gui.add(parametry, 'autoRotacja').name('Auto-rotacja');
-            gui.add(parametry, 'pokazSiatke').name('Siatka').onChange(v => grid.visible = v);
-        }
-
-        function aktualizujKrzywa() {
-            if(krzywa) scene.remove(krzywa);
-            
-            const punkty = [];
-            const kolor = new THREE.Color(parametry.kolor);
-
-            for(let i = 0; i < parametry.dlugoscKrzywej; i++) {
-                const tlumienie = Math.exp(-parametry.tlumienie * t);
-                
-                const x = parametry.amplitudy.x * tlumienie * Math.sin(
-                    parametry.czestotliwosci.x * t + parametry.fazy.x
-                );
-                
-                const y = parametry.amplitudy.y * tlumienie * Math.sin(
-                    parametry.czestotliwosci.y * t + parametry.fazy.y
-                );
-                
-                const z = parametry.amplitudy.z * tlumienie * Math.sin(
-                    parametry.czestotliwosci.z * t + parametry.fazy.z
-                );
-
-                punkty.push(new THREE.Vector3(x, y, z));
-                t += 0.01 * parametry.predkoscAnimacji;
+            const arr = geometry.attributes.position.array;
+            for (let i = 0; i < arr.length; i += 3) {
+                const time = t + (i / 3) * 0.01;
+                arr[i]   = params.amplitude * Math.sin(params.freqX * time);
+                arr[i+1] = params.amplitude * Math.sin(params.freqY * time + Math.PI/2);
+                arr[i+2] = params.amplitude * Math.sin(params.freqZ * time);
             }
+            geometry.attributes.position.needsUpdate = true;
 
-            const geometria = new THREE.BufferGeometry().setFromPoints(punkty);
-            krzywa = new THREE.Line(
-                geometria,
-                new THREE.LineBasicMaterial({ color: kolor, linewidth: 2 })
-            );
-            scene.add(krzywa);
+            t += params.speed;
+            controls.update();
+            renderer.render(scene, camera);
         }
 
-        function inicjalizujWykres() {
-            Plotly.newPlot('wykres-energii', [{
-                x: [], y: [],
-                mode: 'lines',
-                line: { color: '#2ed573', width: 2 }
-            }], {
-                plot_bgcolor: "#252525",
-                paper_bgcolor: "#252525",
-                font: { color: "#fff" },
-                margin: { t: 30, l: 40, r: 20, b: 40 },
-                xaxis: { title: 'Czas [s]', gridcolor: '#404040', range: [0, 50] },
-                yaxis: { title: 'Energia [J]', gridcolor: '#404040', range: [0, 1] }
-            });
-        }
-
-        function aktualizujWykres() {
-            const energia = Math.exp(-2 * parametry.tlumienie * t);
-            Plotly.extendTraces('wykres-energii', {x: [[t]], y: [[energia]]}, [0]);
-            
-            if(t > 50) Plotly.relayout('wykres-energii', {'xaxis.range': [t-50, t]});
-        }
-
-        function animacja() {
-            requestAnimationFrame(animacja);
-            
-            try {
-                controls.update();
-                aktualizujKrzywa();
-                aktualizujWykres();
-
-                if(parametry.autoRotacja) {
-                    camera.position.x = 15 * Math.sin(t/100);
-                    camera.position.z = 15 * Math.cos(t/100);
-                    camera.lookAt(scene.position);
-                }
-
-                renderer.render(scene, camera);
-            } catch (error) {
-                console.error('Błąd animacji:', error);
-            }
-        }
-
-        // Event listeners
+        // Resize
         window.addEventListener('resize', () => {
-            camera.aspect = (window.innerWidth - 320) / window.innerHeight;
+            camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Start
-        inicjalizujScene();
-        inicjalizujGUI();
-        inicjalizujWykres();
-        animacja();
+        animate();
     </script>
 </body>
 </html>
