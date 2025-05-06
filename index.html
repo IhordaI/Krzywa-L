@@ -1,87 +1,1098 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <title>3D Lissajous z osiami</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #111; }
-        canvas { display: block; }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Neon Lissajous Simulator</title>
+  <style>
+    :root {
+      --primary-rgb: 0, 150, 255;
+      --secondary-rgb: 255, 50, 150;
+      --accent-rgb: 100, 255, 150;
+      --bg-dark: #121212;
+      --bg-darker: #0a0a0a;
+      --panel-bg: #1e1e1e;
+      --text-color: rgba(255, 255, 255, 0.9);
+      --text-secondary: rgba(255, 255, 255, 0.6);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --neon-glow: 0 0 10px rgba(var(--primary-rgb), 0.8);
+    }
+    
+    @font-face {
+      font-family: 'Orbitron';
+      src: url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap');
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, var(--bg-darker), var(--bg-dark));
+      font-family: 'Orbitron', 'Roboto', sans-serif;
+      color: var(--text-color);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .app-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+    }
+    
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 2px;
+      background: linear-gradient(90deg, 
+        rgba(var(--primary-rgb), 0), 
+        rgba(var(--primary-rgb), 0.8), 
+        rgba(var(--primary-rgb), 0));
+      box-shadow: var(--neon-glow);
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-weight: 700;
+      font-size: 2.5rem;
+      background: linear-gradient(90deg, 
+        rgb(var(--primary-rgb)), 
+        rgb(var(--secondary-rgb)));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3);
+      letter-spacing: 1px;
+    }
+    
+    .header p {
+      margin: 0.5rem 0 0;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+    }
+    
+    .main-content {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 2rem;
+    }
+    
+    @media (max-width: 992px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .control-panel {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      padding: 1.8rem;
+      height: fit-content;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+    }
+    
+    .control-group {
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    
+    .control-group::after {
+      content: '';
+      position: absolute;
+      bottom: -1rem;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, 
+        rgba(var(--primary-rgb), 0.2), 
+        rgba(var(--primary-rgb), 0.5), 
+        rgba(var(--primary-rgb), 0.2));
+    }
+    
+    .control-group:last-child::after {
+      display: none;
+    }
+    
+    .control-group h3 {
+      margin: 0 0 1.2rem;
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: rgb(var(--primary-rgb));
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .control-group h3::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgb(var(--primary-rgb));
+      margin-right: 10px;
+      box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.8);
+    }
+    
+    .control-item {
+      margin-bottom: 1.5rem;
+    }
+    
+    .control-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .control-item label {
+      display: block;
+      margin-bottom: 0.8rem;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.5px;
+    }
+    
+    .control-value {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+    
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      transition: all 0.3s;
+    }
+    
+    input[type="range"]:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgb(var(--primary-rgb));
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.8);
+      border: 2px solid white;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      background: rgb(var(--secondary-rgb));
+      box-shadow: 0 0 15px rgba(var(--secondary-rgb), 0.8);
+    }
+    
+    .visualization {
+      position: relative;
+      background: var(--panel-bg);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+    
+    .visualization::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        45deg,
+        rgba(var(--primary-rgb), 0.03) 0%,
+        rgba(var(--secondary-rgb), 0.03) 50%,
+        rgba(var(--accent-rgb), 0.03) 100%
+      );
+      pointer-events: none;
+    }
+    
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .canvas-container {
+      width: 100%;
+      aspect-ratio: 900/700;
+      position: relative;
+    }
+    
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      position: relative;
+    }
+    
+    .footer::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 2px;
+      background: linear-gradient(90deg, 
+        rgba(var(--accent-rgb), 0), 
+        rgba(var(--accent-rgb), 0.8), 
+        rgba(var(--accent-rgb), 0));
+      box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.3);
+    }
+    
+    .btn-reset {
+      display: block;
+      width: 100%;
+      padding: 0.8rem;
+      background: linear-gradient(135deg, 
+        rgba(var(--primary-rgb), 0.8), 
+        rgba(var(--secondary-rgb), 0.8));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn-reset:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.4);
+    }
+    
+    .btn-reset::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        to bottom right,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      transform: rotate(30deg);
+      animation: shine 3s infinite;
+    }
+    
+    @keyframes shine {
+      0% { transform: translateX(-100%) rotate(30deg); }
+      100% { transform: translateX(100%) rotate(30deg); }
+    }
+    
+    .rgb-border {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 12px;
+      background: linear-gradient(
+        45deg,
+        rgba(var(--primary-rgb), 0.8),
+        rgba(var(--secondary-rgb), 0.8),
+        rgba(var(--accent-rgb), 0.8),
+        rgba(var(--primary-rgb), 0.8)
+      );
+      background-size: 300% 300%;
+      animation: rgbBorder 8s ease infinite;
+      z-index: -1;
+      filter: blur(5px);
+      opacity: 0.7;
+    }
+    
+    @keyframes rgbBorder {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    .particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      animation: float 15s infinite linear;
+    }
+    
+    @keyframes float {
+      0% { transform: translateY(0) translateX(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100vh) translateX(100px); opacity: 0; }
+    }
+
+    /* Style dla współrzędnych */
+    .coordinate-display {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(30, 30, 30, 0.7);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      color: rgb(var(--accent-rgb));
+      border: 1px solid rgba(var(--accent-rgb), 0.3);
+      box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.2);
+      z-index: 10;
+    }
+
+    .coordinate-display span {
+      display: block;
+      margin: 3px 0;
+    }
+
+    .coordinate-label {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 12px;
+    }
+
+    .coordinate-value {
+      font-weight: 500;
+    }
+
+    /* Style dla punktów przejściowych */
+    .control-item .special-ticks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: -10px;
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .control-item .special-tick {
+      position: relative;
+      text-align: center;
+      width: 1px;
+    }
+
+    .control-item .special-tick::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Three.js + OrbitControls -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
+  <div class="app-container">
+    <div class="particles" id="particles"></div>
+    
+    <div class="header">
+      <h1>Neon Lissajous Simulator</h1>
+      <p>Harmonic motion visualization with dual spring system</p>
+    </div>
+    
+    <div class="main-content">
+      <div class="control-panel">
+        <div class="rgb-border"></div>
+        <div class="control-group">
+          <h3>Motion Parameters</h3>
+          <div class="control-item">
+            <label for="sliderA">Amplitude X (A)</label>
+            <input type="range" id="sliderA" min="0" max="300" value="150">
+            <div class="control-value">
+              <span>0</span>
+              <span id="lblA">150</span>
+              <span>300</span>
+            </div>
+          </div>
+          <div class="control-item">
+            <label for="sliderB">Amplitude Y (B)</label>
+            <input type="range" id="sliderB" min="0" max="300" value="100">
+            <div class="control-value">
+              <span>0</span>
+              <span id="lblB">100</span>
+              <span>300</span>
+            </div>
+          </div>
+          <div class="control-item">
+            <label for="slidera">Frequency X (a)</label>
+            <input type="range" id="slidera" min="1" max="10" value="3" step="0.01">
+            <div class="control-value">
+              <span>1</span>
+              <span id="lbla">3</span>
+              <span>10</span>
+            </div>
+            <div class="special-ticks">
+              <div class="special-tick" style="left: 41.42%">√2</div>
+              <div class="special-tick" style="left: 73.21%">√3</div>
+              <div class="special-tick" style="left: 89.44%">√5</div>
+              <div class="special-tick" style="left: 96.48%">√7</div>
+            </div>
+          </div>
+          <div class="control-item">
+            <label for="sliderb">Frequency Y (b)</label>
+            <input type="range" id="sliderb" min="1" max="10" value="2" step="0.01">
+            <div class="control-value">
+              <span>1</span>
+              <span id="lblb">2</span>
+              <span>10</span>
+            </div>
+            <div class="special-ticks">
+              <div class="special-tick" style="left: 41.42%">√2</div>
+              <div class="special-tick" style="left: 73.21%">√3</div>
+              <div class="special-tick" style="left: 89.44%">√5</div>
+              <div class="special-tick" style="left: 96.48%">√7</div>
+            </div>
+          </div>
+          <div class="control-item">
+            <label for="sliderd">Phase Shift (δ)</label>
+            <input type="range" id="sliderd" min="0" max="6.28" step="0.01" value="1.57">
+            <div class="control-value">
+              <span>0</span>
+              <span id="lbld">1.57</span>
+              <span>6.28</span>
+            </div>
+          </div>
+          <div class="control-item">
+            <label for="sliderDamping">Damping</label>
+            <input type="range" id="sliderDamping" min="0" max="1" step="0.001" value="0">
+            <div class="control-value">
+              <span>0</span>
+              <span id="lblDamping">0</span>
+              <span>1</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <h3>Visualization</h3>
+          <div class="control-item">
+            <label for="sliderTrail">Trail Length</label>
+            <input type="range" id="sliderTrail" min="50" max="1000" value="400">
+            <div class="control-value">
+              <span>50</span>
+              <span id="lblTrail">400</span>
+              <span>1000</span>
+            </div>
+          </div>
+        </div>
+        
+        <button class="btn-reset" id="btnReset">Reset Settings</button>
+      </div>
+      
+      <div class="visualization">
+        <div class="rgb-border"></div>
+        <div class="canvas-container">
+          <canvas id="springAnimation"></canvas>
+          <div class="coordinate-display" id="coordinates">
+            <span class="coordinate-label">Current Position:</span>
+            <span class="coordinate-value">X: <span id="coordX">0</span></span>
+            <span class="coordinate-value">Y: <span id="coordY">0</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p>Dual Spring Harmonic Motion Simulator | © 2023</p>
+    </div>
+  </div>
 
-    <script>
-        // Scena i renderer
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111111);
+  <script>
+    // Inicjalizacja canvas
+    const canvas = document.getElementById('springAnimation');
+    const ctx = canvas.getContext('2d');
+    
+    // Ustawienia początkowe
+    const width = 900, height = 700;
+    const center = { x: width/2, y: height/2 };
+    
+    canvas.width = width;
+    canvas.height = height;
+    
+    // Parametry animacji
+    const params = {
+      amplitudeX: 150,
+      amplitudeY: 100,
+      freqX: 3,
+      freqY: 2,
+      phaseShift: Math.PI/2,
+      speed: 0.015,
+      trailLength: 400,
+      damping: 0,
+      originalAmplitudeX: 150,
+      originalAmplitudeY: 100
+    };
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        camera.position.set(5, 5, 5);
-        camera.lookAt(0, 0, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // Osi i siatka
-        const axesHelper = new THREE.AxesHelper(4);
-        scene.add(axesHelper);
-        const gridHelper = new THREE.GridHelper(10, 10);
-        scene.add(gridHelper);
-
-        // Parametry krzywej
-        const params = {
-            freqX: 3,
-            freqY: 2,
-            freqZ: 1,
-            amplitude: 2,
-            speed: 0.02,
-            points: 500
-        };
-
-        // Geometry i materiał linii
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(params.points * 3);
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const material = new THREE.LineBasicMaterial({ color: 0x00ff88 });
-        const line = new THREE.Line(geometry, material);
-        scene.add(line);
-
-        // Kontrola kamery
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-
-        // Animacja
-        let t = 0;
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const arr = geometry.attributes.position.array;
-            for (let i = 0; i < arr.length; i += 3) {
-                const time = t + (i / 3) * 0.01;
-                arr[i]   = params.amplitude * Math.sin(params.freqX * time);
-                arr[i+1] = params.amplitude * Math.sin(params.freqY * time + Math.PI/2);
-                arr[i+2] = params.amplitude * Math.sin(params.freqZ * time);
-            }
-            geometry.attributes.position.needsUpdate = true;
-
-            t += params.speed;
-            controls.update();
-            renderer.render(scene, camera);
+    // Parametry sprężyn - zaktualizowane dla bardziej realistycznego wyglądu
+    const springParams = {
+      horizontal: {
+        baseLength: 300,
+        coils: 8,  // Mniej zwojów dla bardziej realistycznego wyglądu
+        width: 40  // Szersze zwoje
+      },
+      vertical: {
+        baseLength: 300,
+        coils: 8,
+        width: 40
+      }
+    };
+    
+    // Style wizualne - zaktualizowane kolory sprężyn
+    const visual = {
+      ball: {
+        radius: 22,
+        color: 'rgba(255, 50, 150, 0.9)',
+        highlight: 'rgba(255, 100, 180, 0.9)',
+        shadow: 'rgba(200, 30, 120, 0.9)',
+        glow: '0 0 20px rgba(255, 50, 150, 0.7)'
+      },
+      spring: {
+        color: 'rgba(100, 180, 255, 0.9)',  // Bardziej metaliczny niebieski
+        highlight: 'rgba(180, 230, 255, 0.9)',
+        shadow: 'rgba(0, 100, 180, 0.7)',
+        glow: '0 0 15px rgba(100, 180, 255, 0.6)'
+      },
+      anchor: {
+        size: 10,
+        color: 'rgba(100, 255, 150, 0.9)',
+        ringColor: 'rgba(100, 255, 150, 0.3)',
+        glow: '0 0 10px rgba(100, 255, 150, 0.5)'
+      },
+      trail: {
+        color: 'rgba(100, 255, 150, 0.3)',
+        width: 4,
+        glow: '0 0 5px rgba(100, 255, 150, 0.3)'
+      },
+      grid: {
+        color: 'rgba(255, 255, 255, 0.05)',
+        axisColor: 'rgba(255, 255, 255, 0.3)',
+        step: 50
+      }
+    };
+    
+    // Punkty mocowania sprężyn
+    const anchors = {
+      horizontal: { 
+        x: center.x - springParams.horizontal.baseLength, 
+        y: center.y 
+      },
+      vertical: { 
+        x: center.x, 
+        y: center.y - springParams.vertical.baseLength 
+      }
+    };
+    
+    // Ślad ruchu
+    const trail = [];
+    let time = 0;
+    let animationId = null;
+    let currentBallPos = { x: 0, y: 0 };
+    
+    // Funkcja tworząca cząsteczki tła
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = 50;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        
+        // Losowe pozycje i opóźnienia animacji
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.opacity = Math.random() * 0.5;
+        particle.style.animationDelay = `${Math.random() * 15}s`;
+        particle.style.animationDuration = `${10 + Math.random() * 20}s`;
+        
+        // Losowe rozmiary
+        const size = 1 + Math.random() * 3;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
+    
+    // Funkcja aktualizująca wyświetlane współrzędne
+    function updateCoordinates(x, y) {
+      document.getElementById('coordX').textContent = Math.round(x - center.x);
+      document.getElementById('coordY').textContent = Math.round(center.y - y);
+    }
+    
+    // Funkcja rysująca siatkę i osie współrzędnych
+    function drawGrid() {
+      ctx.save();
+      
+      // Tło siatki
+      ctx.fillStyle = 'rgba(20, 20, 30, 0.8)';
+      ctx.fillRect(0, 0, width, height);
+      
+      // Linie siatki
+      ctx.strokeStyle = visual.grid.color;
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= width; x += visual.grid.step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= height; y += visual.grid.step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+      
+      // Osie współrzędnych
+      ctx.strokeStyle = visual.grid.axisColor;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      
+      // Oś X
+      ctx.beginPath();
+      ctx.moveTo(50, center.y);
+      ctx.lineTo(width - 30, center.y);
+      ctx.stroke();
+      
+      // Oś Y
+      ctx.beginPath();
+      ctx.moveTo(center.x, height - 50);
+      ctx.lineTo(center.x, 30);
+      ctx.stroke();
+      
+      // Podpisy osi
+      ctx.font = 'bold 14px Orbitron';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.textAlign = 'center';
+      ctx.fillText('X', width - 20, center.y - 15);
+      ctx.textAlign = 'left';
+      ctx.fillText('Y', center.x + 15, 25);
+      
+      // Zaznaczenie środka układu
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 50, 150, 0.9)';
+      ctx.fill();
+      ctx.shadowColor = 'rgba(255, 50, 150, 0.7)';
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // Podpisy wartości na osiach
+      ctx.font = '10px Orbitron';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.textAlign = 'center';
+      
+      // Podpisy osi X (co 100px)
+      for (let x = center.x - 300; x <= center.x + 300; x += 100) {
+        if (x !== center.x) {
+          const value = (x - center.x);
+          ctx.fillText(value.toString(), x, center.y + 20);
         }
+      }
+      
+      // Podpisy osi Y (co 100px)
+      ctx.textAlign = 'right';
+      for (let y = center.y - 300; y <= center.y + 300; y += 100) {
+        if (y !== center.y) {
+          const value = (center.y - y);
+          ctx.fillText(value.toString(), center.x - 10, y + 5);
+        }
+      }
+      
+      ctx.restore();
+    }
+    
+    // Ulepszona funkcja rysująca sprężynę
+    function drawSpring(start, end, springType) {
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const length = Math.sqrt(dx*dx + dy*dy);
+      const angle = Math.atan2(dy, dx);
+      
+      const params = springParams[springType];
+      const stretchRatio = length / params.baseLength;
+      const dynamicCoils = Math.max(5, Math.floor(params.coils / stretchRatio));
+      const coilSpacing = length / dynamicCoils;
+      const coilWidth = params.width * (0.5 + 0.5 * Math.min(1, stretchRatio));
 
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+      ctx.save();
+      ctx.translate(start.x, start.y);
+      ctx.rotate(angle);
+      
+      // Rysowanie sprężyny z bardziej realistycznymi zwojami
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      
+      // Początkowa część sprężyny (prosta)
+      ctx.lineTo(coilSpacing * 0.2, 0);
+      
+      // Zwoje sprężyny
+      for(let i = 0; i < dynamicCoils; i++) {
+        const x1 = coilSpacing * (0.2 + i + 0.25);
+        const x2 = coilSpacing * (0.2 + i + 0.5);
+        const x3 = coilSpacing * (0.2 + i + 0.75);
+        const x4 = coilSpacing * (0.2 + i + 1.0);
+        
+        ctx.bezierCurveTo(
+          x1, -coilWidth,
+          x2, -coilWidth,
+          x3, 0
+        );
+        ctx.bezierCurveTo(
+          x3, coilWidth,
+          x4, coilWidth,
+          x4, 0
+        );
+      }
+      
+      // Końcowa część sprężyny (prosta)
+      const endX = length - coilSpacing * 0.2;
+      ctx.lineTo(endX, 0);
+      ctx.lineTo(length, 0);
+      
+      // Gradient sprężyny
+      const gradient = ctx.createLinearGradient(0, 0, length, 0);
+      gradient.addColorStop(0, visual.spring.color);
+      gradient.addColorStop(0.5, 'rgba(150, 220, 255, 0.9)');
+      gradient.addColorStop(1, visual.spring.highlight);
+      
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = visual.spring.glow;
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+      
+      // Dodanie szczegółów dla realizmu
+      ctx.beginPath();
+      for(let i = 0; i < dynamicCoils; i++) {
+        const x = coilSpacing * (0.2 + i + 0.5);
+        ctx.moveTo(x, -coilWidth * 0.7);
+        ctx.lineTo(x, coilWidth * 0.7);
+      }
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      
+      ctx.restore();
+    }
+    
+    // Funkcja rysująca kulę
+    function drawBall(x, y) {
+      ctx.save();
+      
+      // Cień
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 15;
+      ctx.shadowOffsetY = 5;
+      
+      // Gradient
+      const gradient = ctx.createRadialGradient(
+        x - visual.ball.radius/3, 
+        y - visual.ball.radius/3, 
+        0,
+        x, y, 
+        visual.ball.radius
+      );
+      gradient.addColorStop(0, visual.ball.highlight);
+      gradient.addColorStop(0.7, visual.ball.color);
+      gradient.addColorStop(1, visual.ball.shadow);
+      
+      // Kula
+      ctx.beginPath();
+      ctx.arc(x, y, visual.ball.radius, 0, Math.PI*2);
+      ctx.fillStyle = gradient;
+      ctx.shadowColor = visual.ball.glow;
+      ctx.shadowBlur = 20;
+      ctx.fill();
+      
+      // Błysk światła
+      ctx.beginPath();
+      ctx.arc(
+        x - visual.ball.radius/3, 
+        y - visual.ball.radius/3, 
+        visual.ball.radius/4, 
+        0, 
+        Math.PI*2
+      );
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fill();
+      
+      ctx.restore();
+    }
+    
+    // Funkcja animacji
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      
+      // Rysuj siatkę i osie
+      drawGrid();
+      
+      // Oblicz pozycję kuli z uwzględnieniem tłumienia
+      const dampingFactor = Math.exp(-params.damping * time * 0.5);
+      currentBallPos = {
+        x: center.x + params.originalAmplitudeX * dampingFactor * Math.sin(params.freqX * time + params.phaseShift),
+        y: center.y + params.originalAmplitudeY * dampingFactor * Math.sin(params.freqY * time)
+      };
+      
+      // Aktualizuj współrzędne
+      updateCoordinates(currentBallPos.x, currentBallPos.y);
+      
+      // Aktualne amplitudy z tłumieniem
+      params.amplitudeX = params.originalAmplitudeX * dampingFactor;
+      params.amplitudeY = params.originalAmplitudeY * dampingFactor;
+      
+      // Efekt ściśnięcia/rozciągnięcia sprężyn
+      springParams.horizontal.width = 40 * (1 - 0.3 * Math.abs(Math.sin(time * 0.5)));
+      springParams.vertical.width = 40 * (1 - 0.3 * Math.abs(Math.sin(time * 0.5)));
+      
+      // Ograniczenia amplitudy
+      const maxAmplitudeX = center.x - visual.ball.radius - 20;
+      const maxAmplitudeY = center.y - visual.ball.radius - 20;
+      
+      if (params.amplitudeX > maxAmplitudeX) {
+        params.amplitudeX = maxAmplitudeX;
+        params.originalAmplitudeX = maxAmplitudeX;
+      }
+      
+      if (params.amplitudeY > maxAmplitudeY) {
+        params.amplitudeY = maxAmplitudeY;
+        params.originalAmplitudeY = maxAmplitudeY;
+      }
+      
+      time += params.speed;
+      
+      // Aktualizuj ślad
+      trail.push({x: currentBallPos.x, y: currentBallPos.y});
+      if(trail.length > params.trailLength) {
+        trail.shift();
+      }
+      
+      // Rysuj ślad
+      ctx.lineCap = 'round';
+      for(let i = 1; i < trail.length; i++) {
+        const alpha = i/trail.length * 0.5;
+        ctx.strokeStyle = `rgba(100, 255, 150, ${alpha})`;
+        ctx.lineWidth = visual.trail.width * (0.3 + 0.7 * alpha);
+        ctx.shadowColor = visual.trail.glow;
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        ctx.moveTo(trail[i-1].x, trail[i-1].y);
+        ctx.lineTo(trail[i].x, trail[i].y);
+        ctx.stroke();
+      }
+      
+      // Rysuj sprężyny
+      drawSpring(anchors.horizontal, currentBallPos, 'horizontal');
+      drawSpring(anchors.vertical, currentBallPos, 'vertical');
+      
+      // Rysuj kulę
+      drawBall(currentBallPos.x, currentBallPos.y);
+      
+      // Rysuj punkty mocowania
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 5;
+      
+      for(const anchor of Object.values(anchors)) {
+        // Punkt mocowania
+        ctx.beginPath();
+        ctx.arc(anchor.x, anchor.y, visual.anchor.size, 0, Math.PI*2);
+        
+        const gradient = ctx.createRadialGradient(
+          anchor.x, anchor.y, 0,
+          anchor.x, anchor.y, visual.anchor.size
+        );
+        gradient.addColorStop(0, 'rgba(150, 255, 180, 0.9)');
+        gradient.addColorStop(1, visual.anchor.color);
+        
+        ctx.fillStyle = gradient;
+        ctx.shadowColor = visual.anchor.glow;
+        ctx.shadowBlur = 15;
+        ctx.fill();
+        
+        // Metalowy pierścień
+        ctx.beginPath();
+        ctx.arc(anchor.x, anchor.y, visual.anchor.size+2, 0, Math.PI*2);
+        ctx.strokeStyle = visual.anchor.ringColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      
+      ctx.restore();
+      
+      animationId = requestAnimationFrame(animate);
+    }
+    
+    // Funkcja ograniczająca amplitudy
+    function constrainAmplitudes() {
+      const maxAmplitudeX = center.x - visual.ball.radius - 20;
+      const maxAmplitudeY = center.y - visual.ball.radius - 20;
+      
+      params.amplitudeX = Math.min(params.amplitudeX, maxAmplitudeX);
+      params.amplitudeY = Math.min(params.amplitudeY, maxAmplitudeY);
+      params.originalAmplitudeX = params.amplitudeX;
+      params.originalAmplitudeY = params.amplitudeY;
+      
+      document.getElementById('sliderA').value = params.amplitudeX;
+      document.getElementById('lblA').textContent = Math.floor(params.amplitudeX);
+      document.getElementById('sliderB').value = params.amplitudeY;
+      document.getElementById('lblB').textContent = Math.floor(params.amplitudeY);
+    }
+    
+    // Funkcja do obsługi sliderów
+    function bindSlider(id, property, isInt = false, formatter = null) {
+      const slider = document.getElementById(id);
+      const label = document.getElementById('lbl' + id.slice(6));
+      
+      const update = () => {
+        let value = parseFloat(slider.value);
+        if (isInt) value = Math.floor(value);
+        if (formatter) value = formatter(value);
+        params[property] = value;
+        label.textContent = value;
+        
+        if(property === 'trailLength') {
+          while(trail.length > params.trailLength) {
+            trail.shift();
+          }
+        }
+        
+        if (property === 'amplitudeX' || property === 'amplitudeY') {
+          constrainAmplitudes();
+        }
+        
+        // Reset czasu przy zmianie tłumienia
+        if (property === 'damping') {
+          time = 0;
+          params.originalAmplitudeX = params.amplitudeX;
+          params.originalAmplitudeY = params.amplitudeY;
+        }
+      };
+      
+      slider.addEventListener('input', update);
+      update();
+    }
+    
+    // Funkcja resetująca ustawienia
+    function resetSettings() {
+      params.amplitudeX = 150;
+      params.amplitudeY = 100;
+      params.originalAmplitudeX = 150;
+      params.originalAmplitudeY = 100;
+      params.freqX = 3;
+      params.freqY = 2;
+      params.phaseShift = Math.PI/2;
+      params.trailLength = 400;
+      params.damping = 0;
+      
+      document.getElementById('sliderA').value = params.amplitudeX;
+      document.getElementById('sliderB').value = params.amplitudeY;
+      document.getElementById('slidera').value = params.freqX;
+      document.getElementById('sliderb').value = params.freqY;
+      document.getElementById('sliderd').value = params.phaseShift;
+      document.getElementById('sliderTrail').value = params.trailLength;
+      document.getElementById('sliderDamping').value = params.damping;
+      
+      document.getElementById('lblA').textContent = params.amplitudeX;
+      document.getElementById('lblB').textContent = params.amplitudeY;
+      document.getElementById('lbla').textContent = params.freqX;
+      document.getElementById('lblb').textContent = params.freqY;
+      document.getElementById('lbld').textContent = '1.57';
+      document.getElementById('lblTrail').textContent = params.trailLength;
+      document.getElementById('lblDamping').textContent = params.damping;
+      
+      trail.length = 0;
+      time = 0;
+    }
+    
+    // Inicjalizacja
+    function init() {
+      createParticles();
+      constrainAmplitudes();
+      
+      bindSlider('sliderA', 'amplitudeX');
+      bindSlider('sliderB', 'amplitudeY');
+      bindSlider('slidera', 'freqX', false, (v) => Math.round(v * 100) / 100);
+      bindSlider('sliderb', 'freqY', false, (v) => Math.round(v * 100) / 100);
+      bindSlider('sliderd', 'phaseShift', false, (v) => Math.round(v * 100) / 100);
+      bindSlider('sliderTrail', 'trailLength', true);
+      bindSlider('sliderDamping', 'damping', false, (v) => v.toFixed(3));
+      
+      // Dodanie możliwości kliknięcia na znaczniki pierwiastków
+      document.querySelectorAll('.special-tick').forEach(tick => {
+        tick.addEventListener('click', function() {
+          const rootValue = this.textContent;
+          let value;
+          
+          switch(rootValue) {
+            case '√2': value = Math.sqrt(2); break;
+            case '√3': value = Math.sqrt(3); break;
+            case '√5': value = Math.sqrt(5); break;
+            case '√7': value = Math.sqrt(7); break;
+            default: return;
+          }
+          
+          const slider = this.closest('.control-item').querySelector('input[type="range"]');
+          slider.value = value;
+          slider.dispatchEvent(new Event('input'));
         });
-
-        animate();
-    </script>
+      });
+      
+      document.getElementById('btnReset').addEventListener('click', resetSettings);
+      
+      animate();
+    }
+    
+    init();
+  </script>
 </body>
 </html>
