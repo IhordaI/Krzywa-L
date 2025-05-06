@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Neon Lissajous Simulator</title>
+  <title>Lissajous Curve Simulator</title>
   <style>
     :root {
       --primary-rgb: 0, 150, 255;
@@ -424,15 +424,24 @@
     .control-item .special-ticks {
       display: flex;
       justify-content: space-between;
-      margin-top: -10px;
+      margin-top: -12px;
       font-size: 0.7rem;
       color: rgba(255, 255, 255, 0.4);
+      position: relative;
     }
 
     .control-item .special-tick {
-      position: relative;
+      position: absolute;
       text-align: center;
-      width: 1px;
+      width: 8px;
+      transform: translateX(-50%);
+      cursor: pointer;
+      padding: 2px;
+      margin: 0 2px;
+    }
+
+    .control-item .special-tick:hover {
+      color: rgb(var(--primary-rgb));
     }
 
     .control-item .special-tick::before {
@@ -453,7 +462,7 @@
     <div class="particles" id="particles"></div>
     
     <div class="header">
-      <h1>Neon Lissajous Simulator</h1>
+      <h1>Lissajous Curve Simulator</h1>
       <p>Harmonic motion visualization with dual spring system</p>
     </div>
     
@@ -489,10 +498,8 @@
               <span>10</span>
             </div>
             <div class="special-ticks">
-              <div class="special-tick" style="left: 41.42%">√2</div>
-              <div class="special-tick" style="left: 73.21%">√3</div>
-              <div class="special-tick" style="left: 89.44%">√5</div>
-              <div class="special-tick" style="left: 96.48%">√7</div>
+              <div class="special-tick" style="left: 4.60%">√2</div>
+              <div class="special-tick" style="left: 18.39%">√7</div>
             </div>
           </div>
           <div class="control-item">
@@ -504,10 +511,8 @@
               <span>10</span>
             </div>
             <div class="special-ticks">
-              <div class="special-tick" style="left: 41.42%">√2</div>
-              <div class="special-tick" style="left: 73.21%">√3</div>
-              <div class="special-tick" style="left: 89.44%">√5</div>
-              <div class="special-tick" style="left: 96.48%">√7</div>
+              <div class="special-tick" style="left: 4.60%">√2</div>
+              <div class="special-tick" style="left: 18.39%">√7</div>
             </div>
           </div>
           <div class="control-item">
@@ -543,10 +548,10 @@
           <h3>Visualization</h3>
           <div class="control-item">
             <label for="sliderTrail">Trail Length</label>
-            <input type="range" id="sliderTrail" min="50" max="1000" value="400">
+            <input type="range" id="sliderTrail" min="50" max="1000" value="800">
             <div class="control-value">
               <span>50</span>
-              <span id="lblTrail">400</span>
+              <span id="lblTrail">800</span>
               <span>1000</span>
             </div>
           </div>
@@ -573,7 +578,7 @@
     </div>
     
     <div class="footer">
-      <p>Dual Spring Harmonic Motion Simulator | © 2023</p>
+      <p>Dual Spring Harmonic Motion Simulator</p>
     </div>
   </div>
 
@@ -605,12 +610,25 @@
       freqY: 2,
       phaseShift: Math.PI/2,
       speed: 0.015,
-      trailLength: 400,
+      trailLength: 800,
       damping: 0,
       mass: 1,
       originalAmplitudeX: 150,
       originalAmplitudeY: 100
     };
+
+    // Zmienna do przechowywania maksymalnej energii
+    let maxE = calculateMaxEnergy();
+
+    // Funkcja obliczająca maksymalną energię
+    function calculateMaxEnergy() {
+      const k_x = params.mass * params.freqX * params.freqX;
+      const k_y = params.mass * params.freqY * params.freqY;
+      const E_p_x = 0.5 * k_x * params.amplitudeX * params.amplitudeX;
+      const E_p_y = 0.5 * k_y * params.amplitudeY * params.amplitudeY;
+      const E_tot = E_p_x + E_p_y;
+      return Math.min(1300000, Math.ceil((E_tot * 1.2) / 50000) * 50000); // Ograniczenie do 1300k
+    }
 
     // Parametry sprężyn
     const springParams = {
@@ -663,8 +681,8 @@
         potentialColor: '#0000ff'
       },
       phase: {
-        xColor: 'rgba(100, 255, 150, 0.5)',
-        yColor: 'rgba(255, 100, 150, 0.5)'
+        xColor: 'rgba(100, 255, 150, 0.8)',
+        yColor: 'rgba(255, 100, 150, 0.8)'
       }
     };
     
@@ -951,6 +969,14 @@
         params.originalAmplitudeY = maxAmplitudeY;
       }
       
+      // Stop animation if amplitudes are negligible
+      if (params.damping > 0 && Math.abs(params.amplitudeX) < 0.1 && Math.abs(params.amplitudeY) < 0.1) {
+        cancelAnimationFrame(animationId);
+        drawEnergyPlot();
+        drawPhaseSpace();
+        return;
+      }
+      
       time += params.speed;
       
       trail.push({x: currentBallPos.x, y: currentBallPos.y});
@@ -1005,10 +1031,10 @@
       ctx.restore();
       
       // Obliczenia energii
-      const E_p_x = 0.5 * k_x * (x / center.x) ** 2;
-      const E_k_x = 0.5 * m * (dxdt / center.x) ** 2;
-      const E_p_y = 0.5 * k_y * (y / center.y) ** 2;
-      const E_k_y = 0.5 * m * (dydt / center.y) ** 2;
+      const E_p_x = 0.5 * k_x * x * x;
+      const E_k_x = 0.5 * m * dxdt * dxdt;
+      const E_p_y = 0.5 * k_y * y * y;
+      const E_k_y = 0.5 * m * dydt * dydt;
       
       const E_tot = E_p_x + E_k_x + E_p_y + E_k_y;
       const E_k = E_k_x + E_k_y;
@@ -1017,10 +1043,8 @@
       energyHistory.push({ time: time, E_tot, E_k, E_p });
       if (energyHistory.length > 500) energyHistory.shift();
       
-      phaseHistoryX.push({ x: x / center.x, dxdt: dxdt / center.x });
-      phaseHistoryY.push({ y: y / center.y, dydt: dydt / center.y });
-      if (phaseHistoryX.length > 1000) phaseHistoryX.shift();
-      if (phaseHistoryY.length > 1000) phaseHistoryY.shift();
+      phaseHistoryX.push({ x: x, dxdt: dxdt });
+      phaseHistoryY.push({ y: y, dydt: dydt });
       
       // Rysowanie wykresów
       drawEnergyPlot();
@@ -1033,20 +1057,43 @@
     function drawEnergyPlot() {
       energyCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
       
+      energyCtx.fillStyle = 'rgba(20, 20, 30, 0.8)';
+      energyCtx.fillRect(0, 0, energyCanvas.width, energyCanvas.height);
+      
       if (energyHistory.length < 2) return;
       
       const maxTime = 10;
       const filteredHistory = energyHistory.filter(h => h.time >= time - maxTime);
       if (filteredHistory.length < 2) return;
       
-      const maxE = Math.max(...filteredHistory.map(h => h.E_tot)) * 1.1 || 1;
-      const scaleX = energyCanvas.width / (filteredHistory[filteredHistory.length-1].time - filteredHistory[0].time);
-      const scaleY = energyCanvas.height / maxE;
+      const scaleX = (energyCanvas.width - 60) / (filteredHistory[filteredHistory.length-1].time - filteredHistory[0].time);
+      const scaleY = (energyCanvas.height - 40) / maxE;
       
+      // Draw grid
+      energyCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      energyCtx.lineWidth = 1;
+      for (let y = 0; y <= maxE; y += maxE/10) {
+        energyCtx.beginPath();
+        energyCtx.moveTo(40, energyCanvas.height - y * scaleY - 20);
+        energyCtx.lineTo(energyCanvas.width - 20, energyCanvas.height - y * scaleY - 20);
+        energyCtx.stroke();
+      }
+      
+      // Draw axes
+      energyCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      energyCtx.lineWidth = 2;
+      energyCtx.beginPath();
+      energyCtx.moveTo(40, energyCanvas.height - 20);
+      energyCtx.lineTo(energyCanvas.width - 20, energyCanvas.height - 20);
+      energyCtx.moveTo(40, 20);
+      energyCtx.lineTo(40, energyCanvas.height - 20);
+      energyCtx.stroke();
+      
+      // Draw energy plots
       const plots = [
-        { key: 'E_tot', color: visual.energy.totalColor, label: 'E_tot' },
-        { key: 'E_k', color: visual.energy.kineticColor, label: 'E_k' },
-        { key: 'E_p', color: visual.energy.potentialColor, label: 'E_p' }
+        { key: 'E_tot', color: visual.energy.totalColor, label: 'E_total' },
+        { key: 'E_k', color: visual.energy.kineticColor, label: 'E_kinetic' },
+        { key: 'E_p', color: visual.energy.potentialColor, label: 'E_potential' }
       ];
       
       plots.forEach(plot => {
@@ -1057,62 +1104,166 @@
         energyCtx.shadowBlur = 5;
         
         filteredHistory.forEach((point, i) => {
-          const px = (point.time - filteredHistory[0].time) * scaleX;
-          const py = energyCanvas.height - point[plot.key] * scaleY;
+          const px = 40 + (point.time - filteredHistory[0].time) * scaleX;
+          const py = energyCanvas.height - (point[plot.key] * scaleY + 20);
           if (i === 0) energyCtx.moveTo(px, py);
           else energyCtx.lineTo(px, py);
         });
         energyCtx.stroke();
       });
       
+      // Draw labels and legend
       energyCtx.shadowBlur = 0;
       energyCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       energyCtx.font = '12px Orbitron';
+      energyCtx.textAlign = 'left';
       plots.forEach((plot, i) => {
         energyCtx.fillStyle = plot.color;
-        energyCtx.fillText(plot.label, energyCanvas.width - 60, 20 + i * 20);
+        energyCtx.fillText(plot.label, energyCanvas.width - 100, 20 + i * 20);
       });
+      
+      // Draw axis labels with dynamic precision
+      energyCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      energyCtx.fillText('Time (s)', energyCanvas.width - 50, energyCanvas.height - 5);
+      energyCtx.textAlign = 'right';
+      for (let y = 0; y <= maxE; y += maxE/10) {
+        let label;
+        if (maxE < 1000) {
+          label = (y).toFixed(1); // 1 decimal place for small scales
+        } else if (maxE < 10000) {
+          label = (y/1000).toFixed(1) + 'k'; // 1 decimal place in k
+        } else {
+          label = (y/1000).toFixed(0) + 'k'; // No decimals for large scales
+        }
+        energyCtx.fillText(label, 35, energyCanvas.height - (y * scaleY + 20));
+      }
     }
     
     // Funkcja rysowania przestrzeni fazowej
     function drawPhaseSpace() {
       phaseCtx.clearRect(0, 0, phaseCanvas.width, phaseCanvas.height);
       
-      const halfWidth = phaseCanvas.width / 2;
-      const maxPos = Math.max(params.originalAmplitudeX, params.originalAmplitudeY) * 1.2;
-      const maxVel = Math.max(params.originalAmplitudeX * params.freqX, params.originalAmplitudeY * params.freqY) * 1.2;
+      phaseCtx.fillStyle = 'rgba(20, 20, 30, 0.8)';
+      phaseCtx.fillRect(0, 0, phaseCanvas.width, phaseCanvas.height);
       
-      const drawTrajectory = (ctx, history, xKey, yKey, color, offsetX) => {
+      const halfWidth = phaseCanvas.width / 2;
+      const margin = 50;
+      const plotWidth = halfWidth - margin * 2;
+      const plotHeight = phaseCanvas.height - margin * 2;
+      
+      const maxPosX = Math.max(...phaseHistoryX.map(p => Math.abs(p.x)), params.originalAmplitudeX, 1) * 1.2;
+      const maxVelX = Math.max(...phaseHistoryX.map(p => Math.abs(p.dxdt)), params.originalAmplitudeX * params.freqX, 1) * 1.2;
+      const maxPosY = Math.max(...phaseHistoryY.map(p => Math.abs(p.y)), params.originalAmplitudeY, 1) * 1.2;
+      const maxVelY = Math.max(...phaseHistoryY.map(p => Math.abs(p.dydt)), params.originalAmplitudeY * params.freqY, 1) * 1.2;
+      
+      // Draw grid and axes for X phase
+      phaseCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      phaseCtx.lineWidth = 1;
+      for (let x = -maxPosX; x <= maxPosX; x += maxPosX/2) {
+        phaseCtx.beginPath();
+        phaseCtx.moveTo(margin + (x/maxPosX + 1) * plotWidth/2, margin);
+        phaseCtx.lineTo(margin + (x/maxPosX + 1) * plotWidth/2, margin + plotHeight);
+        phaseCtx.stroke();
+      }
+      for (let v = -maxVelX; v <= maxVelX; v += maxVelX/2) {
+        phaseCtx.beginPath();
+        phaseCtx.moveTo(margin, margin + (1 - v/maxVelX) * plotHeight/2);
+        phaseCtx.lineTo(margin + plotWidth, margin + (1 - v/maxVelX) * plotHeight/2);
+        phaseCtx.stroke();
+      }
+      
+      phaseCtx.strokeStyle = 'rgba(255, 255, 250, 0.3)';
+      phaseCtx.lineWidth = 2;
+      phaseCtx.beginPath();
+      phaseCtx.moveTo(margin, margin + plotHeight/2);
+      phaseCtx.lineTo(margin + plotWidth, margin + plotHeight/2);
+      phaseCtx.moveTo(margin + plotWidth/2, margin);
+      phaseCtx.lineTo(margin + plotWidth/2, margin + plotHeight);
+      phaseCtx.stroke();
+      
+      // Draw grid and axes for Y phase
+      for (let x = -maxPosY; x <= maxPosY; x += maxPosY/2) {
+        phaseCtx.beginPath();
+        phaseCtx.moveTo(halfWidth + margin + (x/maxPosY + 1) * plotWidth/2, margin);
+        phaseCtx.lineTo(halfWidth + margin + (x/maxPosY + 1) * plotWidth/2, margin + plotHeight);
+        phaseCtx.stroke();
+      }
+      for (let v = -maxVelY; v <= maxVelY; v += maxVelY/2) {
+        phaseCtx.beginPath();
+        phaseCtx.moveTo(halfWidth + margin, margin + (1 - v/maxVelY) * plotHeight/2);
+        phaseCtx.lineTo(halfWidth + margin + plotWidth, margin + (1 - v/maxVelY) * plotHeight/2);
+        phaseCtx.stroke();
+      }
+      
+      phaseCtx.beginPath();
+      phaseCtx.moveTo(halfWidth + margin, margin + plotHeight/2);
+      phaseCtx.lineTo(halfWidth + margin + plotWidth, margin + plotHeight/2);
+      phaseCtx.moveTo(halfWidth + margin + plotWidth/2, margin);
+      phaseCtx.lineTo(halfWidth + margin + plotWidth/2, margin + plotHeight);
+      phaseCtx.stroke();
+      
+      // Draw trajectories
+      const drawTrajectory = (ctx, history, xKey, yKey, color, offsetX, maxPos, maxVel) => {
         ctx.beginPath();
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.shadowColor = color;
         ctx.shadowBlur = 5;
         
         history.forEach((point, i) => {
-          const px = offsetX + (point[xKey] / maxPos + 1) * (halfWidth / 2);
-          const py = (1 - point[yKey] / maxVel) * phaseCanvas.height / 2;
+          const px = offsetX + margin + (point[xKey]/maxPos + 1) * plotWidth/2;
+          const py = margin + (1 - point[yKey]/maxVel) * plotHeight/2;
           if (i === 0) ctx.moveTo(px, py);
           else ctx.lineTo(px, py);
         });
         ctx.stroke();
       };
       
-      drawTrajectory(phaseCtx, phaseHistoryX, 'x', 'dxdt', visual.phase.xColor, 0);
-      drawTrajectory(phaseCtx, phaseHistoryY, 'y', 'dydt', visual.phase.yColor, halfWidth);
+      drawTrajectory(phaseCtx, phaseHistoryX, 'x', 'dxdt', visual.phase.xColor, 0, maxPosX, maxVelX);
+      drawTrajectory(phaseCtx, phaseHistoryY, 'y', 'dydt', visual.phase.yColor, halfWidth, maxPosY, maxVelY);
       
+      // Draw labels
       phaseCtx.shadowBlur = 0;
-      phaseCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-      phaseCtx.beginPath();
-      phaseCtx.moveTo(halfWidth, 0);
-      phaseCtx.lineTo(halfWidth, phaseCanvas.height);
-      phaseCtx.stroke();
-      
       phaseCtx.fillStyle = visual.phase.xColor;
       phaseCtx.font = '14px Orbitron';
-      phaseCtx.fillText('X Phase', halfWidth / 2 - 30, 20);
+      phaseCtx.textAlign = 'center';
+      phaseCtx.fillText('X Phase', halfWidth/2, 30);
       phaseCtx.fillStyle = visual.phase.yColor;
-      phaseCtx.fillText('Y Phase', halfWidth + halfWidth / 2 - 30, 20);
+      phaseCtx.fillText('Y Phase', halfWidth + halfWidth/2, 30);
+      
+      // Draw axis labels
+      phaseCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      phaseCtx.font = '10px Orbitron';
+      phaseCtx.textAlign = 'center';
+      for (let x = -maxPosX; x <= maxPosX; x += maxPosX/2) {
+        phaseCtx.fillText(x.toFixed(0), margin + (x/maxPosX + 1) * plotWidth/2, margin + plotHeight + 15);
+      }
+      phaseCtx.textAlign = 'right';
+      for (let v = -maxVelX; v <= maxVelX; v += maxVelX/2) {
+        phaseCtx.fillText(v.toFixed(0), margin - 5, margin + (1 - v/maxVelX) * plotHeight/2 + 5);
+      }
+      
+      phaseCtx.textAlign = 'center';
+      for (let x = -maxPosY; x <= maxPosY; x += maxPosY/2) {
+        phaseCtx.fillText(x.toFixed(0), halfWidth + margin + (x/maxPosY + 1) * plotWidth/2, margin + plotHeight + 15);
+      }
+      phaseCtx.textAlign = 'right';
+      for (let v = -maxVelY; v <= maxVelY; v += maxVelY/2) {
+        phaseCtx.fillText(v.toFixed(0), halfWidth + margin - 5, margin + (1 - v/maxVelY) * plotHeight/2 + 5);
+      }
+      
+      phaseCtx.fillText('Position', halfWidth/2, phaseCanvas.height - 10);
+      phaseCtx.fillText('Position', halfWidth + halfWidth/2, phaseCanvas.height - 10);
+      phaseCtx.save();
+      phaseCtx.translate(20, phaseCanvas.height/2);
+      phaseCtx.rotate(-Math.PI/2);
+      phaseCtx.fillText('Velocity', 0, 0);
+      phaseCtx.restore();
+      phaseCtx.save();
+      phaseCtx.translate(halfWidth + 20, phaseCanvas.height/2);
+      phaseCtx.rotate(-Math.PI/2);
+      phaseCtx.fillText('Velocity', 0, 0);
+      phaseCtx.restore();
     }
     
     // Funkcja do obsługi sliderów
@@ -1136,6 +1287,7 @@
           phaseHistoryX.length = 0;
           phaseHistoryY.length = 0;
           time = 0;
+          maxE = calculateMaxEnergy(); // Aktualizacja maxE przy zmianie parametrów
         }
         
         if (property === 'amplitudeX' || property === 'amplitudeY') {
@@ -1156,7 +1308,7 @@
       params.freqX = 3;
       params.freqY = 2;
       params.phaseShift = Math.PI/2;
-      params.trailLength = 400;
+      params.trailLength = 800;
       params.damping = 0;
       params.mass = 1;
       
@@ -1183,8 +1335,38 @@
       phaseHistoryX.length = 0;
       phaseHistoryY.length = 0;
       time = 0;
+      maxE = calculateMaxEnergy();
+      
+      // Restart animation
+      if (animationId) cancelAnimationFrame(animationId);
+      animate();
     }
     
+    // Funkcja ograniczająca amplitudy
+    function constrainAmplitudes() {
+      const maxAmplitudeX = center.x - visual.ball.radius - 20;
+      const maxAmplitudeY = center.y - visual.ball.radius - 20;
+      
+      params.amplitudeX = Math.min(params.amplitudeX, maxAmplitudeX);
+      params.amplitudeY = Math.min(params.amplitudeY, maxAmplitudeY);
+      params.originalAmplitudeX = params.amplitudeX;
+      params.originalAmplitudeY = params.amplitudeY;
+      
+      document.getElementById('sliderA').value = params.amplitudeX;
+      document.getElementById('lblA').textContent = Math.floor(params.amplitudeX);
+      document.getElementById('sliderB').value = params.amplitudeY;
+      document.getElementById('lblB').textContent = Math.floor(params.amplitudeY);
+      maxE = calculateMaxEnergy();
+    }
+    
+    // Obsługa zoomowania wykresu energii
+    energyCanvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1; // Zoom in/out
+      maxE *= zoomFactor;
+      maxE = Math.max(100, Math.min(1300000, maxE)); // Ograniczenia zoomu
+    });
+
     // Inicjalizacja
     function init() {
       createParticles();
@@ -1206,8 +1388,6 @@
           
           switch(rootValue) {
             case '√2': value = Math.sqrt(2); break;
-            case '√3': value = Math.sqrt(3); break;
-            case '√5': value = Math.sqrt(5); break;
             case '√7': value = Math.sqrt(7); break;
             default: return;
           }
@@ -1221,22 +1401,6 @@
       document.getElementById('btnReset').addEventListener('click', resetSettings);
       
       animate();
-    }
-    
-    // Funkcja ograniczająca amplitudy
-    function constrainAmplitudes() {
-      const maxAmplitudeX = center.x - visual.ball.radius - 20;
-      const maxAmplitudeY = center.y - visual.ball.radius - 20;
-      
-      params.amplitudeX = Math.min(params.amplitudeX, maxAmplitudeX);
-      params.amplitudeY = Math.min(params.amplitudeY, maxAmplitudeY);
-      params.originalAmplitudeX = params.amplitudeX;
-      params.originalAmplitudeY = params.amplitudeY;
-      
-      document.getElementById('sliderA').value = params.amplitudeX;
-      document.getElementById('lblA').textContent = Math.floor(params.amplitudeX);
-      document.getElementById('sliderB').value = params.amplitudeY;
-      document.getElementById('lblB').textContent = Math.floor(params.amplitudeY);
     }
     
     init();
