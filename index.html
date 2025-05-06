@@ -535,11 +535,11 @@
           </div>
           <div class="control-item">
             <label for="sliderMass">Mass (m)</label>
-            <input type="range" id="sliderMass" min="0.1" max="10" step="0.1" value="1">
+            <input type="range" id="sliderMass" min="0.01" max="0.2" step="0.01" value="0.1">
             <div class="control-value">
-              <span>0.1</span>
-              <span id="lblMass">1</span>
-              <span>10</span>
+              <span>0.01</span>
+              <span id="lblMass">0.1</span>
+              <span>0.2</span>
             </div>
           </div>
         </div>
@@ -612,7 +612,7 @@
       speed: 0.015,
       trailLength: 800,
       damping: 0,
-      mass: 1,
+      mass: 0.1,
       originalAmplitudeX: 150,
       originalAmplitudeY: 100
     };
@@ -627,7 +627,7 @@
       const E_p_x = 0.5 * k_x * params.amplitudeX * params.amplitudeX;
       const E_p_y = 0.5 * k_y * params.amplitudeY * params.amplitudeY;
       const E_tot = E_p_x + E_p_y;
-      return Math.min(1300000, Math.ceil((E_tot * 1.2) / 50000) * 50000); // Ograniczenie do 1300k
+      return Math.min(2000000, Math.ceil((E_tot * 1.2) / 50000) * 50000);
     }
 
     // Parametry sprężyn
@@ -1172,7 +1172,7 @@
         phaseCtx.stroke();
       }
       
-      phaseCtx.strokeStyle = 'rgba(255, 255, 250, 0.3)';
+      phaseCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       phaseCtx.lineWidth = 2;
       phaseCtx.beginPath();
       phaseCtx.moveTo(margin, margin + plotHeight/2);
@@ -1287,7 +1287,7 @@
           phaseHistoryX.length = 0;
           phaseHistoryY.length = 0;
           time = 0;
-          maxE = calculateMaxEnergy(); // Aktualizacja maxE przy zmianie parametrów
+          maxE = calculateMaxEnergy();
         }
         
         if (property === 'amplitudeX' || property === 'amplitudeY') {
@@ -1310,7 +1310,7 @@
       params.phaseShift = Math.PI/2;
       params.trailLength = 800;
       params.damping = 0;
-      params.mass = 1;
+      params.mass = 0.1;
       
       document.getElementById('sliderA').value = params.amplitudeX;
       document.getElementById('sliderB').value = params.amplitudeY;
@@ -1328,7 +1328,7 @@
       document.getElementById('lbld').textContent = '1.57';
       document.getElementById('lblTrail').textContent = params.trailLength;
       document.getElementById('lblDamping').textContent = params.damping;
-      document.getElementById('lblMass').textContent = params.mass;
+      document.getElementById('lblMass').textContent = params.mass.toFixed(2);
       
       trail.length = 0;
       energyHistory.length = 0;
@@ -1364,7 +1364,7 @@
       e.preventDefault();
       const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1; // Zoom in/out
       maxE *= zoomFactor;
-      maxE = Math.max(100, Math.min(1300000, maxE)); // Ograniczenia zoomu
+      maxE = Math.max(100, Math.min(2000000, maxE));
     });
 
     // Inicjalizacja
@@ -1379,7 +1379,7 @@
       bindSlider('sliderd', 'phaseShift', false, (v) => Math.round(v * 100) / 100);
       bindSlider('sliderTrail', 'trailLength', true);
       bindSlider('sliderDamping', 'damping', false, (v) => v.toFixed(3));
-      bindSlider('sliderMass', 'mass', false, (v) => v.toFixed(1));
+      bindSlider('sliderMass', 'mass', false, (v) => v.toFixed(2));
       
       document.querySelectorAll('.special-tick').forEach(tick => {
         tick.addEventListener('click', function() {
