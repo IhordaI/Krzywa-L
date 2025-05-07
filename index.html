@@ -619,7 +619,7 @@
       amplitudeY: 100,
       freqX: 3,
       freqY: 2,
-      phaseShift: 0.5,
+      phaseShift: 0.5, // Value from 0 to 2, representing 0 to 2π
       speed: 0.015,
       trailLength: 800,
       damping: 0,
@@ -946,20 +946,21 @@
       
       const dampingFactor = Math.exp(-gamma * time);
       
-      // Corrected equations with phase shift applied to x-coordinate
-      const x = params.originalAmplitudeX * dampingFactor * Math.sin(omegaX * time + params.phaseShift * Math.PI);
+      // Corrected phase shift application: slider value (0 to 2) directly maps to 0 to 2π
+      const phaseShiftRad = params.phaseShift * Math.PI; // Convert 0-2 to 0-2π
+      const x = params.originalAmplitudeX * dampingFactor * Math.sin(omegaX * time + phaseShiftRad);
       const y = params.originalAmplitudeY * dampingFactor * Math.sin(omegaY * time);
       
       const dxdt = params.originalAmplitudeX * dampingFactor * (
-        -gamma * Math.sin(omegaX * time + params.phaseShift * Math.PI) + 
-        omegaX * Math.cos(omegaX * time + params.phaseShift * Math.PI)
+        -gamma * Math.sin(omegaX * time + phaseShiftRad) + 
+        omegaX * Math.cos(omegaX * time + phaseShiftRad)
       );
       const dydt = params.originalAmplitudeY * dampingFactor * (
         -gamma * Math.sin(omegaY * time) + 
         omegaY * Math.cos(omegaY * time)
       );
       
-      currentBallPos = { x: center.x + x, y: center.y - y }; // Note: y is negated to match canvas coordinate system
+      currentBallPos = { x: center.x + x, y: center.y - y }; // y negated for canvas coordinates
       
       updateCoordinates(currentBallPos.x, currentBallPos.y);
       
