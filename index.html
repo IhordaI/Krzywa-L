@@ -583,7 +583,7 @@
   </div>
 
   <script>
-    // Inicjalizacja canvasów
+    // Canvas initialization
     const canvas = document.getElementById('springAnimation');
     const ctx = canvas.getContext('2d');
     const energyCanvas = document.getElementById('energyCanvas');
@@ -591,7 +591,7 @@
     const phaseCanvas = document.getElementById('phaseCanvas');
     const phaseCtx = phaseCanvas.getContext('2d');
     
-    // Ustawienia początkowe
+    // Initial settings
     const width = 900, height = 700;
     const center = { x: width/2, y: height/2 };
     
@@ -602,7 +602,7 @@
     phaseCanvas.width = 900;
     phaseCanvas.height = 400;
     
-    // Parametry animacji
+    // Animation parameters
     const params = {
       amplitudeX: 150,
       amplitudeY: 100,
@@ -617,10 +617,10 @@
       originalAmplitudeY: 100
     };
 
-    // Zmienna do przechowywania maksymalnej energii
+    // Variable to store maximum energy
     let maxE = calculateMaxEnergy();
 
-    // Funkcja obliczająca maksymalną energię
+    // Function that calculates the maximum energy
     function calculateMaxEnergy() {
       const k_x = params.mass * params.freqX * params.freqX;
       const k_y = params.mass * params.freqY * params.freqY;
@@ -630,7 +630,7 @@
       return Math.min(2000000, Math.ceil((E_tot * 1.2) / 50000) * 50000);
     }
 
-    // Parametry sprężyn
+    // Spring parameters
     const springParams = {
       horizontal: {
         baseLength: 300,
@@ -644,7 +644,7 @@
       }
     };
     
-    // Style wizualne
+    // Visual Styles
     const visual = {
       ball: {
         radius: 22,
@@ -686,7 +686,7 @@
       }
     };
     
-    // Punkty mocowania sprężyn
+    // Spring attachment points     
     const anchors = {
       horizontal: { 
         x: center.x - springParams.horizontal.baseLength, 
@@ -698,7 +698,7 @@
       }
     };
     
-    // Ślady i historie
+    // Traces and stories
     const trail = [];
     const energyHistory = [];
     const phaseHistoryX = [];
@@ -707,7 +707,7 @@
     let animationId = null;
     let currentBallPos = { x: 0, y: 0 };
     
-    // Funkcja tworząca cząsteczki tła
+    // Function that creates background particles
     function createParticles() {
       const particlesContainer = document.getElementById('particles');
       const particleCount = 50;
@@ -730,13 +730,13 @@
       }
     }
     
-    // Funkcja aktualizująca wyświetlane współrzędne
+    // Function that updates the displayed coordinates
     function updateCoordinates(x, y) {
       document.getElementById('coordX').textContent = Math.round(x - center.x);
       document.getElementById('coordY').textContent = Math.round(center.y - y);
     }
     
-    // Funkcja rysująca siatkę i osie współrzędnych
+    // Function drawing the grid and coordinate axes
     function drawGrid() {
       ctx.save();
       
@@ -810,7 +810,7 @@
       ctx.restore();
     }
     
-    // Funkcja rysująca sprężynę
+    // Spring drawing function
     function drawSpring(start, end, springType) {
       const dx = end.x - start.x;
       const dy = end.y - start.y;
@@ -880,7 +880,7 @@
       ctx.restore();
     }
     
-    // Funkcja rysująca kulę
+    // Function that draws a ball
     function drawBall(x, y) {
       ctx.save();
       
@@ -920,7 +920,7 @@
       ctx.restore();
     }
     
-    // Funkcja animacji
+    // Animation function
     function animate() {
       ctx.clearRect(0, 0, width, height);
       
@@ -1030,7 +1030,7 @@
       
       ctx.restore();
       
-      // Obliczenia energii
+      // Energy calculations
       const E_p_x = 0.5 * k_x * x * x;
       const E_k_x = 0.5 * m * dxdt * dxdt;
       const E_p_y = 0.5 * k_y * y * y;
@@ -1046,14 +1046,14 @@
       phaseHistoryX.push({ x: x, dxdt: dxdt });
       phaseHistoryY.push({ y: y, dydt: dydt });
       
-      // Rysowanie wykresów
+      // Drawing graphs
       drawEnergyPlot();
       drawPhaseSpace();
       
       animationId = requestAnimationFrame(animate);
     }
     
-    // Funkcja rysowania wykresu energii
+    // Energy graph drawing function
     function drawEnergyPlot() {
       energyCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
       
@@ -1139,7 +1139,7 @@
       }
     }
     
-    // Funkcja rysowania przestrzeni fazowej
+    // Phase space drawing function
     function drawPhaseSpace() {
       phaseCtx.clearRect(0, 0, phaseCanvas.width, phaseCanvas.height);
       
@@ -1266,7 +1266,7 @@
       phaseCtx.restore();
     }
     
-    // Funkcja do obsługi sliderów
+    // Slider handling function
     function bindSlider(id, property, isInt = false, formatter = null) {
       const slider = document.getElementById(id);
       const label = document.getElementById('lbl' + id.slice(6));
@@ -1299,7 +1299,7 @@
       update();
     }
     
-    // Funkcja resetująca ustawienia
+    // Function that resets settings
     function resetSettings() {
       params.amplitudeX = 150;
       params.amplitudeY = 100;
@@ -1342,7 +1342,7 @@
       animate();
     }
     
-    // Funkcja ograniczająca amplitudy
+    // Amplitude limiting function
     function constrainAmplitudes() {
       const maxAmplitudeX = center.x - visual.ball.radius - 20;
       const maxAmplitudeY = center.y - visual.ball.radius - 20;
@@ -1359,7 +1359,7 @@
       maxE = calculateMaxEnergy();
     }
     
-    // Obsługa zoomowania wykresu energii
+    // Support for zooming the energy graph
     energyCanvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1; // Zoom in/out
@@ -1367,7 +1367,7 @@
       maxE = Math.max(100, Math.min(2000000, maxE));
     });
 
-    // Inicjalizacja
+    // Initialization
     function init() {
       createParticles();
       constrainAmplitudes();
