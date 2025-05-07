@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -170,7 +170,7 @@
       justify-content: space-between;
       font-size: 0.85rem;
       color: var(--text-secondary);
-      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
     }
     
     input[type="range"] {
@@ -433,7 +433,7 @@
     .control-item .special-tick {
       position: absolute;
       text-align: center;
-      width: 8px;
+      width: 20px;
       transform: translateX(-50%);
       cursor: pointer;
       padding: 2px;
@@ -498,8 +498,8 @@
               <span>10</span>
             </div>
             <div class="special-ticks">
-              <div class="special-tick" style="left: 4.60%">√2</div>
-              <div class="special-tick" style="left: 18.39%">√7</div>
+              <div class="special-tick" style="left: 4.60%" data-value="1.414">√2</div>
+              <div class="special-tick" style="left: 18.39%" data-value="2.645">√7</div>
             </div>
           </div>
           <div class="control-item">
@@ -511,17 +511,28 @@
               <span>10</span>
             </div>
             <div class="special-ticks">
-              <div class="special-tick" style="left: 4.60%">√2</div>
-              <div class="special-tick" style="left: 18.39%">√7</div>
+              <div class="special-tick" style="left: 4.60%" data-value="1.414">√2</div>
+              <div class="special-tick" style="left: 18.39%" data-value="2.645">√7</div>
             </div>
           </div>
           <div class="control-item">
             <label for="sliderd">Phase Shift (δ)</label>
-            <input type="range" id="sliderd" min="0" max="6.28" step="0.01" value="1.57">
             <div class="control-value">
               <span>0</span>
-              <span id="lbld">1.57</span>
-              <span>6.28</span>
+              <span id="lbld">π/2</span>
+              <span>2π</span>
+            </div>
+            <input type="range" id="sliderd" min="0" max="2" value="0.5" step="0.001">
+            <div class="special-ticks">
+              <div class="special-tick" style="left: 0%" data-value="0">0</div>
+              <div class="special-tick" style="left: 12.5%" data-value="0.25">π/4</div>
+              <div class="special-tick" style="left: 25%" data-value="0.5">π/2</div>
+              <div class="special-tick" style="left: 37.5%" data-value="0.75">3π/4</div>
+              <div class="special-tick" style="left: 50%" data-value="1">π</div>
+              <div class="special-tick" style="left: 62.5%" data-value="1.25">5π/4</div>
+              <div class="special-tick" style="left: 75%" data-value="1.5">3π/2</div>
+              <div class="special-tick" style="left: 87.5%" data-value="1.75">7π/4</div>
+              <div class="special-tick" style="left: 100%" data-value="2">2π</div>
             </div>
           </div>
           <div class="control-item">
@@ -583,7 +594,7 @@
   </div>
 
   <script>
-    // Canvas initialization
+    // Initialize canvas elements
     const canvas = document.getElementById('springAnimation');
     const ctx = canvas.getContext('2d');
     const energyCanvas = document.getElementById('energyCanvas');
@@ -591,7 +602,7 @@
     const phaseCanvas = document.getElementById('phaseCanvas');
     const phaseCtx = phaseCanvas.getContext('2d');
     
-    // Initial settings
+    // Set initial canvas dimensions
     const width = 900, height = 700;
     const center = { x: width/2, y: height/2 };
     
@@ -608,7 +619,7 @@
       amplitudeY: 100,
       freqX: 3,
       freqY: 2,
-      phaseShift: Math.PI/2,
+      phaseShift: 0.5,
       speed: 0.015,
       trailLength: 800,
       damping: 0,
@@ -620,7 +631,7 @@
     // Variable to store maximum energy
     let maxE = calculateMaxEnergy();
 
-    // Function that calculates the maximum energy
+    // Calculate maximum energy
     function calculateMaxEnergy() {
       const k_x = params.mass * params.freqX * params.freqX;
       const k_y = params.mass * params.freqY * params.freqY;
@@ -644,7 +655,7 @@
       }
     };
     
-    // Visual Styles
+    // Visual styles
     const visual = {
       ball: {
         radius: 22,
@@ -686,7 +697,7 @@
       }
     };
     
-    // Spring attachment points     
+    // Anchor points for springs
     const anchors = {
       horizontal: { 
         x: center.x - springParams.horizontal.baseLength, 
@@ -698,7 +709,7 @@
       }
     };
     
-    // Traces and stories
+    // Trails and history arrays
     const trail = [];
     const energyHistory = [];
     const phaseHistoryX = [];
@@ -707,7 +718,7 @@
     let animationId = null;
     let currentBallPos = { x: 0, y: 0 };
     
-    // Function that creates background particles
+    // Create background particles
     function createParticles() {
       const particlesContainer = document.getElementById('particles');
       const particleCount = 50;
@@ -730,13 +741,13 @@
       }
     }
     
-    // Function that updates the displayed coordinates
+    // Update displayed coordinates
     function updateCoordinates(x, y) {
       document.getElementById('coordX').textContent = Math.round(x - center.x);
       document.getElementById('coordY').textContent = Math.round(center.y - y);
     }
     
-    // Function drawing the grid and coordinate axes
+    // Draw grid and coordinate axes
     function drawGrid() {
       ctx.save();
       
@@ -810,7 +821,7 @@
       ctx.restore();
     }
     
-    // Spring drawing function
+    // Draw a spring
     function drawSpring(start, end, springType) {
       const dx = end.x - start.x;
       const dy = end.y - start.y;
@@ -880,7 +891,7 @@
       ctx.restore();
     }
     
-    // Function that draws a ball
+    // Draw the ball
     function drawBall(x, y) {
       ctx.save();
       
@@ -935,19 +946,20 @@
       
       const dampingFactor = Math.exp(-gamma * time);
       
-      const x = params.originalAmplitudeX * dampingFactor * Math.sin(omegaX * time + params.phaseShift);
+      // Corrected equations with phase shift applied to x-coordinate
+      const x = params.originalAmplitudeX * dampingFactor * Math.sin(omegaX * time + params.phaseShift * Math.PI);
       const y = params.originalAmplitudeY * dampingFactor * Math.sin(omegaY * time);
       
       const dxdt = params.originalAmplitudeX * dampingFactor * (
-        -gamma * Math.sin(omegaX * time + params.phaseShift) + 
-        omegaX * Math.cos(omegaX * time + params.phaseShift)
+        -gamma * Math.sin(omegaX * time + params.phaseShift * Math.PI) + 
+        omegaX * Math.cos(omegaX * time + params.phaseShift * Math.PI)
       );
       const dydt = params.originalAmplitudeY * dampingFactor * (
         -gamma * Math.sin(omegaY * time) + 
         omegaY * Math.cos(omegaY * time)
       );
       
-      currentBallPos = { x: center.x + x, y: center.y + y };
+      currentBallPos = { x: center.x + x, y: center.y - y }; // Note: y is negated to match canvas coordinate system
       
       updateCoordinates(currentBallPos.x, currentBallPos.y);
       
@@ -1030,7 +1042,7 @@
       
       ctx.restore();
       
-      // Energy calculations
+      // Calculate energy
       const E_p_x = 0.5 * k_x * x * x;
       const E_k_x = 0.5 * m * dxdt * dxdt;
       const E_p_y = 0.5 * k_y * y * y;
@@ -1046,14 +1058,14 @@
       phaseHistoryX.push({ x: x, dxdt: dxdt });
       phaseHistoryY.push({ y: y, dydt: dydt });
       
-      // Drawing graphs
+      // Draw plots
       drawEnergyPlot();
       drawPhaseSpace();
       
       animationId = requestAnimationFrame(animate);
     }
     
-    // Energy graph drawing function
+    // Draw energy plot
     function drawEnergyPlot() {
       energyCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
       
@@ -1139,7 +1151,16 @@
       }
     }
     
-    // Phase space drawing function
+    // Handle zoom for energy plot
+    energyCanvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1; // Zoom in/out
+      maxE *= zoomFactor;
+      maxE = Math.max(100, Math.min(2000000, maxE));
+      drawEnergyPlot();
+    });
+    
+    // Draw phase space
     function drawPhaseSpace() {
       phaseCtx.clearRect(0, 0, phaseCanvas.width, phaseCanvas.height);
       
@@ -1266,7 +1287,23 @@
       phaseCtx.restore();
     }
     
-    // Slider handling function
+    // Format phase shift values in terms of π
+    function formatPhaseShift(value) {
+      const keyAngles = {
+        0: '0',
+        0.25: 'π/4',
+        0.5: 'π/2',
+        0.75: '3π/4',
+        1: 'π',
+        1.25: '5π/4',
+        1.5: '3π/2',
+        1.75: '7π/4',
+        2: '2π'
+      };
+      return keyAngles[value] || (value * Math.PI).toFixed(2);
+    }
+    
+    // Handle slider inputs
     function bindSlider(id, property, isInt = false, formatter = null) {
       const slider = document.getElementById(id);
       const label = document.getElementById('lbl' + id.slice(6));
@@ -1274,9 +1311,8 @@
       const update = () => {
         let value = parseFloat(slider.value);
         if (isInt) value = Math.floor(value);
-        if (formatter) value = formatter(value);
         params[property] = value;
-        label.textContent = value;
+        label.textContent = formatter ? formatter(value) : value;
         
         if (property === 'trailLength') {
           while(trail.length > params.trailLength) {
@@ -1290,6 +1326,8 @@
           maxE = calculateMaxEnergy();
         }
         
+        if (property === 'amplitudeX') params.originalAmplitudeX = value;
+        if (property === 'amplitudeY') params.originalAmplitudeY = value;
         if (property === 'amplitudeX' || property === 'amplitudeY') {
           constrainAmplitudes();
         }
@@ -1299,50 +1337,7 @@
       update();
     }
     
-    // Function that resets settings
-    function resetSettings() {
-      params.amplitudeX = 150;
-      params.amplitudeY = 100;
-      params.originalAmplitudeX = 150;
-      params.originalAmplitudeY = 100;
-      params.freqX = 3;
-      params.freqY = 2;
-      params.phaseShift = Math.PI/2;
-      params.trailLength = 800;
-      params.damping = 0;
-      params.mass = 0.1;
-      
-      document.getElementById('sliderA').value = params.amplitudeX;
-      document.getElementById('sliderB').value = params.amplitudeY;
-      document.getElementById('slidera').value = params.freqX;
-      document.getElementById('sliderb').value = params.freqY;
-      document.getElementById('sliderd').value = params.phaseShift;
-      document.getElementById('sliderTrail').value = params.trailLength;
-      document.getElementById('sliderDamping').value = params.damping;
-      document.getElementById('sliderMass').value = params.mass;
-      
-      document.getElementById('lblA').textContent = params.amplitudeX;
-      document.getElementById('lblB').textContent = params.amplitudeY;
-      document.getElementById('lbla').textContent = params.freqX;
-      document.getElementById('lblb').textContent = params.freqY;
-      document.getElementById('lbld').textContent = '1.57';
-      document.getElementById('lblTrail').textContent = params.trailLength;
-      document.getElementById('lblDamping').textContent = params.damping;
-      document.getElementById('lblMass').textContent = params.mass.toFixed(2);
-      
-      trail.length = 0;
-      energyHistory.length = 0;
-      phaseHistoryX.length = 0;
-      phaseHistoryY.length = 0;
-      time = 0;
-      maxE = calculateMaxEnergy();
-      
-      // Restart animation
-      if (animationId) cancelAnimationFrame(animationId);
-      animate();
-    }
-    
-    // Amplitude limiting function
+    // Constrain amplitudes to canvas boundaries
     function constrainAmplitudes() {
       const maxAmplitudeX = center.x - visual.ball.radius - 20;
       const maxAmplitudeY = center.y - visual.ball.radius - 20;
@@ -1359,24 +1354,57 @@
       maxE = calculateMaxEnergy();
     }
     
-    // Support for zooming the energy graph
-    energyCanvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 0.9 : 1.1; // Zoom in/out
-      maxE *= zoomFactor;
-      maxE = Math.max(100, Math.min(2000000, maxE));
-    });
-
-    // Initialization
+    // Reset settings to default values
+    function resetSettings() {
+      params.amplitudeX = 150;
+      params.originalAmplitudeX = 150;
+      params.amplitudeY = 100;
+      params.originalAmplitudeY = 100;
+      params.freqX = 3;
+      params.freqY = 2;
+      params.phaseShift = 0.5;
+      params.trailLength = 800;
+      params.damping = 0;
+      params.mass = 0.1;
+      
+      document.getElementById('sliderA').value = 150;
+      document.getElementById('lblA').textContent = 150;
+      document.getElementById('sliderB').value = 100;
+      document.getElementById('lblB').textContent = 100;
+      document.getElementById('slidera').value = 3;
+      document.getElementById('lbla').textContent = 3;
+      document.getElementById('sliderb').value = 2;
+      document.getElementById('lblb').textContent = 2;
+      document.getElementById('sliderd').value = 0.5;
+      document.getElementById('lbld').textContent = 'π/2';
+      document.getElementById('sliderDamping').value = 0;
+      document.getElementById('lblDamping').textContent = 0;
+      document.getElementById('sliderMass').value = 0.1;
+      document.getElementById('lblMass').textContent = 0.1;
+      document.getElementById('sliderTrail').value = 800;
+      document.getElementById('lblTrail').textContent = 800;
+      
+      energyHistory.length = 0;
+      phaseHistoryX.length = 0;
+      phaseHistoryY.length = 0;
+      trail.length = 0;
+      time = 0;
+      maxE = calculateMaxEnergy();
+      
+      if (animationId) cancelAnimationFrame(animationId);
+      animationId = requestAnimationFrame(animate);
+    }
+    
+    // Initialize
     function init() {
       createParticles();
       constrainAmplitudes();
       
-      bindSlider('sliderA', 'amplitudeX');
-      bindSlider('sliderB', 'amplitudeY');
+      bindSlider('sliderA', 'amplitudeX', true);
+      bindSlider('sliderB', 'amplitudeY', true);
       bindSlider('slidera', 'freqX', false, (v) => Math.round(v * 100) / 100);
       bindSlider('sliderb', 'freqY', false, (v) => Math.round(v * 100) / 100);
-      bindSlider('sliderd', 'phaseShift', false, (v) => Math.round(v * 100) / 100);
+      bindSlider('sliderd', 'phaseShift', false, formatPhaseShift);
       bindSlider('sliderTrail', 'trailLength', true);
       bindSlider('sliderDamping', 'damping', false, (v) => v.toFixed(3));
       bindSlider('sliderMass', 'mass', false, (v) => v.toFixed(2));
@@ -1389,6 +1417,15 @@
           switch(rootValue) {
             case '√2': value = Math.sqrt(2); break;
             case '√7': value = Math.sqrt(7); break;
+            case '0': value = 0; break;
+            case 'π/4': value = 0.25; break;
+            case 'π/2': value = 0.5; break;
+            case '3π/4': value = 0.75; break;
+            case 'π': value = 1; break;
+            case '5π/4': value = 1.25; break;
+            case '3π/2': value = 1.5; break;
+            case '7π/4': value = 1.75; break;
+            case '2π': value = 2; break;
             default: return;
           }
           
